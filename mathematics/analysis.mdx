@@ -1,5 +1,5 @@
 ---
-title: "Analysis in Mathlib: Calculus, Measure Theory, and Functional Analysis"
+title: "Analysis in Mathlib: Calculus, Measures, and Spaces"
 sidebarTitle: "Analysis"
 description: "Discover Mathlib's formalized real and complex analysis, Lebesgue integration, Fourier transforms, normed spaces, and Hilbert space theory."
 ---
@@ -307,7 +307,7 @@ Mathlib's Bochner integral works for functions valued in any Banach space, not j
 ```lean
 -- Fourier transform
 #check Real.fourier_eq                  -- Fourier transform as an integral
-#check MeasureTheory.fourierIntegral    -- General fourierIntegral definition
+#check VectorFourier.fourierIntegral    -- General fourierIntegral definition
 
 -- Inversion formula
 #check Continuous.fourierInv_fourier_eq

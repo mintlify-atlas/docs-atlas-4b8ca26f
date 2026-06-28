@@ -62,7 +62,7 @@ linarith?                                  -- prints a minimized hypothesis list
 </Note>
 
 <Accordion title="How linarith works internally">
-`linarith` uses the Simplex Algorithm (sparse mode by default) as its oracle. It rearranges all linear hypotheses into the form `tᵢ Rᵢ 0` and searches for non-negative coefficients `kᵢ` such that `∑ kᵢ tᵢ = 0` with at least one strict inequality. Once a certificate is found, it is verified by the `ring` tactic. You can switch to the Fourier-Motzkin oracle with `linarith (oracle := .fourierMotzkin)`, or to the dense Simplex variant with `linarith (oracle := .simplexAlgorithmDense)`.
+`linarith` uses the Simplex Algorithm (sparse mode by default) as its oracle. It rearranges all linear hypotheses into the form `tᵢ Rᵢ 0` and searches for natural-number coefficients `kᵢ` such that `∑ kᵢ tᵢ = 0`, where for at least one `i`, `kᵢ > 0` and `Rᵢ = <` (a strict inequality). Once a certificate is found, it is verified by the `ring` tactic. You can switch to the Fourier-Motzkin oracle with `linarith (oracle := .fourierMotzkin)`, or to the dense Simplex variant with `linarith (oracle := .simplexAlgorithmDense)`.
 
 Trace intermediate steps with `set_option trace.linarith true`.
 </Accordion>
@@ -73,7 +73,7 @@ Trace intermediate steps with `set_option trace.linarith true`.
 
 `nlinarith` extends `linarith` with a preprocessing step that handles some nonlinear arithmetic goals. Before calling the linear oracle, it adds auxiliary hypotheses derived from products of existing hypotheses.
 
-Specifically, for every subterm `a ^ 2` or `a * a`, it adds `0 ≤ a ^ 2`. For every pair of hypotheses `a₁ R₁ b₁` and `a₂ R₂ b₂`, it adds `0 R' (b₁ - a₁) * (b₂ - a₂)`. This often suffices to reduce a nonlinear goal to a linear one.
+Specifically, for every subterm `a ^ 2` or `a * a` appearing in the hypotheses, it adds a proof of `0 ≤ a ^ 2` (via `sq_nonneg`) or `0 ≤ a * a` (via `mul_self_nonneg`). For every pair of hypotheses `t₁ R₁ 0` and `t₂ R₂ 0` (in rearranged form), it adds a proof of `t₁ * t₂ R 0`. This often suffices to reduce a nonlinear goal to a linear one.
 
 ```lean
 example (n : ℕ) (h : n ≥ 1) : n * n ≥ n := by
@@ -175,11 +175,16 @@ example (a b : ℝ) (h : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2) : True := by
   </Tab>
   <Tab title="ring!">
 ```lean
--- ring! uses a stronger reducibility setting
--- useful when definitions need to be unfolded
-example (a b : ℤ) (h : a = b) : a + a = 2 * b := by
-  ring_nf
-  linarith
+-- ring! uses a stronger reducibility setting to identify atoms
+-- It unfolds reducible definitions that plain ring would leave opaque
+
+-- ring handles this directly:
+example (a b c : ℝ) : (a + b) * c = a * c + b * c := by ring
+
+-- ring! is needed when terms are definitionally equal but ring can't see it:
+-- e.g., when a custom definition wraps a ring expression
+def myDouble (n : ℤ) : ℤ := n + n
+example (n : ℤ) : myDouble n = 2 * n := by ring!
 ```
   </Tab>
 </Tabs>

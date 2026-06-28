@@ -1,7 +1,7 @@
 ---
 title: "Category Theory in Mathlib: Functors, Limits, and Sheaves"
 sidebarTitle: "Category Theory"
-description: "Mathlib's category theory library covers functors, natural transformations, adjunctions, limits, monoidal categories, abelian categories, and Grothendieck topologies."
+description: "Mathlib's category theory covers functors, natural transformations, adjunctions, limits, monoidal and abelian categories, and sheaves."
 ---
 
 Mathlib's category theory library, rooted at `Mathlib/CategoryTheory/`, is one of the most comprehensive formalizations of abstract category theory in any proof assistant. It provides the foundational language — categories, functors, natural transformations, adjunctions, limits and colimits — and builds from there to monoidal categories, abelian categories, triangulated categories, homological algebra, and the Grothendieck topos machinery needed for modern algebraic geometry. The library is designed so that concrete mathematical categories (groups, rings, modules, topological spaces, schemes) are all instances of the abstract framework, enabling full code reuse across mathematical domains.
@@ -30,7 +30,7 @@ Mathlib's category theory library, rooted at `Mathlib/CategoryTheory/`, is one o
     Mathlib provides bundled categories for common structures.
 
     ```lean
-    #check GroupCat     -- Category of groups
+    #check GrpCat       -- Category of groups
     #check RingCat      -- Category of rings
     #check ModuleCat    -- Category of R-modules
     #check TopCat       -- Category of topological spaces
@@ -100,8 +100,8 @@ The Yoneda lemma is fully formalized and used throughout the library:
 #check CategoryTheory.Adjunction.counit
 
 -- Left adjoints preserve colimits, right adjoints preserve limits
-#check CategoryTheory.Adjunction.isLeftAdjoint   -- ∃ right adjoint
-#check CategoryTheory.Adjunction.isRightAdjoint  -- ∃ left adjoint
+#check CategoryTheory.IsLeftAdjoint   -- type class: has a right adjoint
+#check CategoryTheory.IsRightAdjoint  -- type class: has a left adjoint
 
 -- Monads (from adjunctions)
 #check CategoryTheory.Monad   -- A monad T on C with μ : T² ⟹ T, η : Id ⟹ T
@@ -135,7 +135,7 @@ The Yoneda lemma is fully formalized and used throughout the library:
 ```
 
 <Note>
-Mathlib uses the `HasLimitsOfShape` and `HasColimitsOfShape` type classes to express that a category has all limits (resp. colimits) of a given shape. Most concrete categories (`GroupCat`, `ModuleCat`, etc.) are equipped with appropriate instances.
+Mathlib uses the `HasLimitsOfShape` and `HasColimitsOfShape` type classes to express that a category has all limits (resp. colimits) of a given shape. Most concrete categories (`GrpCat`, `ModuleCat`, etc.) are equipped with appropriate instances.
 </Note>
 
 ## Monoidal Categories
@@ -177,7 +177,7 @@ Mathlib uses the `HasLimitsOfShape` and `HasColimitsOfShape` type classes to exp
 -- instance : Abelian (ModuleCat R) := ...
 
 -- Exact sequences
-#check CategoryTheory.ShortExact
+#check CategoryTheory.ShortComplex.ShortExact
 -- 0 ⟶ A ⟶ B ⟶ C ⟶ 0 is a short exact sequence
 ```
 
@@ -240,11 +240,11 @@ Mathlib uses the `HasLimitsOfShape` and `HasColimitsOfShape` type classes to exp
 ```lean
 -- Triangulated category
 -- (partially formalized, see Mathlib.CategoryTheory.Triangulated)
-#check CategoryTheory.Triangulated.Triangle
+#check CategoryTheory.Pretriangulated.Triangle
 -- A distinguished triangle X ⟶ Y ⟶ Z ⟶ X[1]
 
 -- The homotopy category of an additive category
-#check CategoryTheory.HomotopyCategory
+#check HomotopyCategory
 ```
 
 ## Further Examples and Instances
@@ -258,14 +258,14 @@ Mathlib proves that standard mathematical categories satisfy the abstract axioms
 -- instance : Abelian (ModuleCat R)
 
 -- Limits in the category of groups
--- GroupCat has all small limits and filtered colimits
+-- GrpCat has all small limits and filtered colimits
 
 -- The free-forgetful adjunction
 #check CategoryTheory.Adjunction  -- Free : Set ⊣ Forget : Grp → Set
 
 -- Kan extensions
-#check CategoryTheory.Limits.leftKanExtension
-#check CategoryTheory.Limits.rightKanExtension
+#check CategoryTheory.Functor.leftKanExtension
+#check CategoryTheory.Functor.rightKanExtension
 ```
 
 </Accordion>

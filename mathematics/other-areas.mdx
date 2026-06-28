@@ -1,5 +1,5 @@
 ---
-title: "Other Mathematical Areas in Mathlib: Combinatorics to Dynamics"
+title: "Other Areas in Mathlib: From Combinatorics to Dynamics"
 sidebarTitle: "Other Areas"
 description: "A guide to Mathlib's combinatorics, probability, set theory, order theory, algebraic topology, representation theory, and condensed mathematics coverage."
 ---
@@ -151,7 +151,7 @@ Mathlib's probability library (`Mathlib/Probability/`) is built on top of the me
 -- (1/n) * ∑_{i<n} Xᵢ → 𝔼[X₁] almost surely
 
 -- Central limit theorem
-#check ProbabilityTheory.tendsToInDistribution_inv_sqrt_mul_sum_sub
+#check ProbabilityTheory.tendstoInDistribution_inv_sqrt_mul_sum_sub
 -- (∑Xᵢ - n*μ) / √(n*σ²) converges in distribution to N(0,1)
 
 -- Chebyshev's inequality
@@ -294,8 +294,8 @@ Order theory in Mathlib (`Mathlib/Order/`) provides the abstract framework for l
 
 ```lean
 -- Simplicial sets
-#check AlgebraicTopology.SimplicialSet
--- A functor Δᵒᵖ ⥤ Type*
+#check SSet
+-- A functor Δᵒᵖ ⥤ Type* (abbrev for SimplicialObject (Type u))
 
 -- Simplicial objects in a category
 #check CategoryTheory.SimplicialObject
@@ -337,13 +337,16 @@ Algebraic topology in Mathlib is an active development area. Simplicial sets, th
 ## Information Theory
 
 ```lean
--- Shannon entropy
-#check MeasureTheory.Measure.entropy
--- H(X) = -∑ p(x) log p(x)
+-- Binary entropy function (Shannon entropy of a Bernoulli variable)
+#check Real.binEntropy
+-- Real.binEntropy p = p * log p⁻¹ + (1-p) * log (1-p)⁻¹
 
--- Kullback-Leibler divergence
-#check MeasureTheory.Measure.klDiv
--- KL(μ ‖ ν) = ∫ log(dμ/dν) dμ
+-- q-ary entropy function
+#check Real.qaryEntropy
+
+-- Kullback-Leibler divergence (in InformationTheory namespace)
+#check InformationTheory.klDiv
+-- klDiv μ ν : ℝ≥0∞  — the KL divergence between two measures
 
 -- Log-sum inequality and data processing
 -- (see Mathlib.InformationTheory)
@@ -382,8 +385,8 @@ Condensed mathematics (Clausen–Scholze) is one of the most recent and advanced
 -- Condensed.toCompHaus : the site
 
 -- Condensed modules over a ring R
-#check Condensed.Module
--- A sheaf of R-modules on CompHaus
+#check CondensedMod
+-- CondensedMod R : a sheaf of R-modules on CompHaus (abbrev for Condensed (ModuleCat R))
 
 -- Solid abelian groups and light condensed mathematics
 -- (under active development in Mathlib)

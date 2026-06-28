@@ -242,7 +242,7 @@ example (h : ¬ ∀ x : ℝ, x ^ 2 ≥ 0) : ∃ x : ℝ, x ^ 2 < 0 := by
 
 ## `wlog`
 
-`wlog` reduces the goal to a canonical case. Given a goal and a hypothesis `h : P`, `wlog h : P` adds `h : P` to the context and generates a second goal asking you to reduce the general case to the case where `P` holds.
+`wlog` reduces the goal to a canonical case. `wlog h : P` splits into two goals: a **side goal** (placed first) where you reduce the `h : ¬ P` case to the `P` case using symmetry, and a **main goal** where `h : P` is in context and you prove the goal directly. The side goal also receives `this`, the statement that the main goal holds whenever `P` holds.
 
 ```lean
 -- Prove a symmetric statement by WLOG
@@ -257,12 +257,17 @@ example (a b : ℝ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
 The general form is:
 
 ```lean
-wlog h : P [using x y]
+wlog h : P
+wlog h : P generalizing x y   -- reverts x and y before creating the side goal
+wlog h : P with H              -- names the "sufficiency" hypothesis H instead of this
 ```
 
-After `wlog h : P`:
-- The current goal gets hypothesis `h : P` added, and you prove the goal in this simpler case.
-- A second goal is generated: assuming the goal holds when `P` is true, prove it in general.
+After `wlog h : P`, two goals are produced:
+
+1. **Side goal** (first): the context gains `h : ¬ P` and `this` (or `H`), the statement that the original goal follows from `P`. You must reduce the general case to the case where `P` holds, typically by a symmetry argument applying `this` with swapped arguments.
+2. **Main goal**: the context gains `h : P` and you prove the original goal under this assumption.
+
+The `generalizing x y` modifier reverts `x` and `y` before constructing the side goal, so the wlog-claim `this` can be applied to `x` and `y` in a different order (the typical symmetry use case).
 
 This is most useful for symmetric goals (like swapping two variables) or for goals where one case implies the other by a simple transformation.
 </Accordion>

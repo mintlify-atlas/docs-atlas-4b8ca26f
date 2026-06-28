@@ -39,7 +39,7 @@ example : 17 ∈ ([3, 7, 11, 17, 23] : List ℕ) := by native_decide
 </Tabs>
 
 <Warning>
-`native_decide` generates a proof that invokes compiled native code, which is **not** checked by the Lean kernel. It is trusted the same way `sorry` is not — the proof is accepted, but correctness depends on the native compiler and runtime being trustworthy. Use it only when `decide` is too slow and the goal is clearly decidable.
+`native_decide` generates a proof that invokes compiled native code, which is **not** re-checked by the Lean kernel at verification time. Unlike `sorry`, it does produce a genuine certificate — but correctness depends on the native compiler and runtime producing the right answer. The proof is accepted without kernel-level reduction, so it adds a trusted-code dependency to your proof. Use it only when `decide` is too slow and the goal is clearly decidable.
 </Warning>
 
 ---

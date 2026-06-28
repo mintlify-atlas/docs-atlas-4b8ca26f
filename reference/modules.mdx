@@ -1,10 +1,10 @@
 ---
 title: "Mathlib4 Module Hierarchy and Import Structure"
 sidebarTitle: "Modules"
-description: "How Mathlib4 organizes its 8000+ modules across 33 top-level directories, how to use selective imports, and how to find theorems in the library."
+description: "How Mathlib4 organizes its 8000+ modules across 33 top-level entries, how to use selective imports, and how to find theorems in the library."
 ---
 
-Mathlib4 is structured as a collection of more than 8,000 individual Lean 4 modules, each corresponding to a single `.lean` source file. These modules are organized into 33 top-level directories under the `Mathlib/` folder, and every module is re-exported from the single root file `Mathlib.lean`. Understanding this hierarchy helps you import only what your project needs, keeps build times fast, and makes it easier to locate specific definitions and theorems in the library.
+Mathlib4 is structured as a collection of more than 8,000 individual Lean 4 modules, each corresponding to a single `.lean` source file. These modules are organized into 31 subdirectories and 2 standalone files under the `Mathlib/` folder (33 top-level entries in total), and every module is re-exported from the single root file `Mathlib.lean`. Understanding this hierarchy helps you import only what your project needs, keeps build times fast, and makes it easier to locate specific definitions and theorems in the library.
 
 ## How the Module System Works
 
@@ -50,7 +50,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 ## Top-Level Directories
 
-The 33 top-level directories in `Mathlib/` each group a coherent area of mathematics or infrastructure. The table below describes what each one contains.
+The 33 top-level entries in `Mathlib/` each group a coherent area of mathematics or infrastructure. The cards below describe what each one contains.
 
 <CardGroup cols={2}>
   <Card title="Algebra" icon="function">
@@ -137,6 +137,21 @@ The 33 top-level directories in `Mathlib/` each group a coherent area of mathema
   <Card title="Util" icon="screwdriver-wrench">
     Shared internal utilities: reflection helpers, attribute infrastructure, and miscellaneous lemmas used across Mathlib itself.
   </Card>
+  <Card title="Deprecated" icon="triangle-exclamation">
+    Declarations that have been superseded and are kept temporarily for backwards compatibility. Files here import their replacements and re-export them under the old names, allowing downstream code time to migrate.
+  </Card>
+  <Card title="Lean" icon="code">
+    Metaprogramming utilities and extensions to the Lean 4 elaborator specific to Mathlib's needs — attribute infrastructure, environment extensions, and reflection helpers not provided by Batteries.
+  </Card>
+  <Card title="Testing" icon="flask-vial">
+    Infrastructure for property-based and unit testing within Mathlib, complementing the `plausible` dependency. Contains helpers for writing and running `#test` blocks and `plausible` examples.
+  </Card>
+  <Card title="Init.lean (file)" icon="file-code">
+    A standalone file that bootstraps Mathlib's initialization: sets up default instances, notation, and options before the rest of the library is imported.
+  </Card>
+  <Card title="Tactic.lean (file)" icon="file-code">
+    A standalone re-export file: `import Mathlib.Tactic` gives access to all Mathlib tactics without importing the entire library.
+  </Card>
 </CardGroup>
 
 ## Finding a Specific Theorem
@@ -155,9 +170,6 @@ If you know what you are looking for conceptually but not which module it lives 
 
   -- Searches for a simp lemma that rewrites the goal
   simp?
-
-  -- Runs a general proof-search strategy
-  search_proof_tactic
   ```
 </Accordion>
 
@@ -172,11 +184,12 @@ If you know what you are looking for conceptually but not which module it lives 
 <Accordion title="Loogle and Moogle semantic search">
   - **Loogle** at [loogle.lean-lang.org](https://loogle.lean-lang.org/) lets you search by type signature pattern, e.g. `(?a + ?b) * ?c = ?a * ?c + ?b * ?c`.
   - **Moogle** at [moogle.ai](https://www.moogle.ai/) supports natural-language queries such as "commutativity of addition in a ring".
-  - Both are also available as Lean tactics via `LeanSearchClient`:
+  - Both are also available as Lean commands via `LeanSearchClient` (a Mathlib dependency):
 
   ```lean
-  import Mathlib.Tactic.Loogle
-  #check @?   -- hover a declaration to reveal its full name
+  import LeanSearchClient
+  #moogle "commutativity of addition in a ring"
+  #loogle "(?a + ?b) * ?c = ?a * ?c + ?b * ?c"
   ```
 </Accordion>
 

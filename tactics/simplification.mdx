@@ -110,6 +110,7 @@ example : (fun x : ℝ => x * 1) = (fun x => x) := by
   simp_rw [mul_one]
 
 -- simp_rw rewrites left-to-right by default; use ← to reverse
+variable (f g : ℝ → ℝ) in
 example (h : ∀ x : ℝ, f x = g x) : (∀ x, g x + 1 = f x + 1) := by
   simp_rw [← h]
 ```

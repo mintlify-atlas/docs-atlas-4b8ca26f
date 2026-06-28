@@ -244,14 +244,14 @@ If you need to submit partial work, open a draft PR and explain which parts are 
 
 ## `adaptation_note`
 
-When a piece of code needs to change because of an upstream Lean or Batteries update, use the `adaptation_note` comment to explain the situation:
+When a piece of code needs to change because of an upstream Lean or Batteries update, use the `#adaptation_note` command to explain the situation:
 
 ```lean
--- adaptation_note: This proof was changed after leanprover/lean4#1234
--- because `simp` no longer unfolds `foo` by default.
+#adaptation_note /-- This proof was changed after leanprover/lean4#1234
+because `simp` no longer unfolds `foo` by default. -/
 ```
 
-This helps future contributors understand why the code looks the way it does and makes it easier to clean up after the upstream issue is resolved.
+`#adaptation_note` is a Lean 4 command defined in `Mathlib.Tactic.AdaptationNote`. It works in command, tactic, and term mode, and must be followed by a `/-- doc comment -/`. This helps future contributors understand why the code looks the way it does and makes it easier to clean up after the upstream issue is resolved.
 
 ## `assert_not_exists`
 

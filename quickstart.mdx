@@ -1,7 +1,7 @@
 ---
-title: "Quickstart: Your First Lean 4 Proof with Mathlib"
+title: "Quickstart Guide: Write Your First Lean 4 Proof with Mathlib"
 sidebarTitle: "Quickstart"
-description: "Write and run your first Lean 4 proof using Mathlib in minutes. Covers ring, linarith, and norm_num with real working examples."
+description: "Write and run your first Lean 4 proof using Mathlib in under ten minutes. Covers ring, linarith, and norm_num tactics with real working code examples."
 ---
 
 This guide takes you from a blank file to a working collection of Lean 4 proofs using Mathlib. It assumes you have Lean 4 installed and a project with Mathlib as a dependency. If you have not done that yet, follow the [Installation](./installation) and [Using Mathlib as a Dependency](./using-as-dependency) guides first. Once your project is set up and `lake exe cache get` has finished, you are ready to go — no further compilation is needed to run the examples below.
@@ -30,8 +30,8 @@ import Mathlib
 #check Nat.add_comm
 -- Nat.add_comm : ∀ (n m : ℕ), n + m = m + n
 
-#check Real.sqrt_two_mul_self
--- Real.sqrt_two_mul_self : √2 * √2 = 2
+#check irrational_sqrt_two
+-- irrational_sqrt_two : Irrational (√2)
 ```
 
 <Tip>
