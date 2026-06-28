@@ -1,0 +1,333 @@
+---
+title: "Analysis in Mathlib: Calculus, Measure Theory, and Functional Analysis"
+sidebarTitle: "Analysis"
+description: "Discover Mathlib's formalized real and complex analysis, Lebesgue integration, Fourier transforms, normed spaces, and Hilbert space theory."
+---
+
+Analysis in Mathlib spans the `Mathlib/Analysis/` and `Mathlib/MeasureTheory/` directories and represents one of the deepest and most extensively verified bodies of mathematics in any proof assistant. The development covers real and complex analysis from first principles — derivatives, integrals, power series — through the full machinery of measure theory (sigma-algebras, Lebesgue and Bochner integration, Fubini's theorem), functional analysis (normed and Banach spaces, the Hahn-Banach theorem, the open mapping theorem), and Hilbert space theory including the Fréchet-Riesz representation and the spectral theorem for self-adjoint operators. The analysis library integrates tightly with Mathlib's topology layer: continuity, convergence, and compactness arguments all flow through the unified `Filter` abstraction.
+
+## Real and Complex Analysis
+
+### Basic Number Types
+
+```lean
+#check Real     -- ℝ, the real numbers (as a Cauchy completion of ℚ)
+#check Complex  -- ℂ = ℝ × ℝ with i² = -1
+#check EReal    -- Extended reals ℝ ∪ {-∞, +∞}
+```
+
+### Derivatives and Differentiability
+
+Mathlib formalizes derivatives for functions between general normed spaces using the Fréchet derivative, with one-dimensional derivatives as a special case.
+
+```lean
+-- Fréchet derivative at a point
+#check HasFDerivAt      -- f has Fréchet derivative f' at x
+#check DifferentiableAt -- f is Fréchet-differentiable at x
+#check DifferentiableOn -- f is differentiable on a set
+
+-- One-dimensional derivative
+#check HasDerivAt       -- f has derivative f' at x (scalar case)
+#check deriv            -- The derivative function ℝ → ℝ
+
+-- Chain rule
+#check HasFDerivAt.comp
+-- (hg : HasFDerivAt g g' (f x)) → (hf : HasFDerivAt f f' x) →
+--   HasFDerivAt (g ∘ f) (g'.comp f') x
+```
+
+<CardGroup cols={2}>
+  <Card title="Mean Value Theorem" icon="chart-line">
+    ```lean
+    #check exists_ratio_deriv_eq_ratio_slope
+    -- ∃ c ∈ (a, b), (f b - f a) / (b - a) = deriv f c
+    ```
+  </Card>
+  <Card title="Rolle's Theorem" icon="arrows-left-right">
+    ```lean
+    #check exists_deriv_eq_zero
+    -- f a = f b → ∃ c ∈ (a, b), deriv f c = 0
+    ```
+  </Card>
+  <Card title="Inverse Function Theorem" icon="arrows-rotate">
+    ```lean
+    #check HasStrictFDerivAt.to_localInverse
+    ```
+  </Card>
+  <Card title="Implicit Function Theorem" icon="function">
+    ```lean
+    #check ImplicitFunctionData.implicitFunction
+    ```
+  </Card>
+</CardGroup>
+
+```lean
+-- Higher-order smoothness: Cᵏ functions
+#check ContDiff        -- f is k-times continuously differentiable
+
+-- Taylor's theorem
+-- (see Mathlib.Analysis.Calculus.Taylor)
+
+-- Local extrema
+#check IsLocalMin.fderiv_eq_zero  -- Fermat's theorem
+```
+
+### Special Functions
+
+```lean
+#check Real.exp    -- Exponential function
+#check Real.log    -- Natural logarithm
+#check Real.sin    -- Sine
+#check Real.cos    -- Cosine
+#check Real.arcsin -- Arcsine
+#check Real.sinh   -- Hyperbolic sine
+```
+
+## Measure Theory and Integration
+
+Measure theory lives in `Mathlib.MeasureTheory` and provides the rigorous foundations for integration used throughout analysis and probability.
+
+### Sigma-Algebras and Measures
+
+```lean
+-- Measurable spaces and sigma-algebras
+#check MeasurableSpace     -- Type class: a sigma-algebra on α
+#check Measurable          -- f : α → β is measurable
+#check BorelSpace          -- The Borel sigma-algebra from a topology
+
+-- Measures
+#check MeasureTheory.Measure        -- A countably additive measure
+#check MeasureTheory.Measure.pi     -- Product of finitely many measures
+#check Real.measureSpace            -- Lebesgue measure on ℝ
+#check MeasureTheory.Measure.hausdorffMeasure  -- Hausdorff measure
+```
+
+### Integration
+
+```lean
+-- Bochner integral (vector-valued)
+#check MeasureTheory.integral       -- ∫ x, f x ∂μ
+#check MeasureTheory.Integrable     -- f is Bochner-integrable
+
+-- Lebesgue integral (non-negative functions)
+#check MeasureTheory.lintegral      -- ∫⁻ x, f x ∂μ
+
+-- L^p spaces
+#check MeasureTheory.Lp    -- The Banach space Lᵖ(μ)
+#check MeasureTheory.UniformIntegrable  -- Uniform integrability
+```
+
+<CardGroup cols={2}>
+  <Card title="Dominated Convergence" icon="arrow-trend-down">
+    ```lean
+    #check MeasureTheory.tendsto_integral_of_dominated_convergence
+    ```
+  </Card>
+  <Card title="Monotone Convergence" icon="arrow-trend-up">
+    ```lean
+    #check MeasureTheory.lintegral_iInf_ae
+    ```
+  </Card>
+  <Card title="Fubini's Theorem" icon="table-cells">
+    ```lean
+    #check MeasureTheory.integral_prod
+    -- ∫ (x, y), f x y ∂(μ.prod ν) =
+    --   ∫ x, ∫ y, f x y ∂ν ∂μ
+    ```
+  </Card>
+  <Card title="Fundamental Theorem of Calculus" icon="integral">
+    ```lean
+    -- Part 1 (differentiation of integral)
+    #check intervalIntegral.integral_hasFDerivAt_of_tendsto_ae
+    -- Part 2 (Newton-Leibniz)
+    #check intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le
+    ```
+  </Card>
+</CardGroup>
+
+```lean
+-- Change of variables
+#check MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul
+
+-- Convolution
+#check MeasureTheory.convolution
+#check ContDiffBump.convolution_tendsto_right  -- Approximation by convolution
+
+-- Haar measure on locally compact groups
+#check MeasureTheory.Measure.haarMeasure
+```
+
+<Note>
+Mathlib's Bochner integral works for functions valued in any Banach space, not just ℝ or ℂ. This generality is used extensively in probability theory and functional analysis.
+</Note>
+
+## Functional Analysis
+
+### Normed and Banach Spaces
+
+```lean
+-- Normed spaces
+#check NormedSpace       -- A module over a normed field with compatible norm
+#check NormedAddCommGroup -- Additive group with a norm
+
+-- Continuous linear maps
+#check ContinuousLinearMap   -- L : E →L[𝕜] F  (bounded linear operator)
+#check LinearMap.mkContinuous -- Bound a linear map to get a continuous one
+
+-- Norms of operators
+-- ‖L‖ = sup { ‖L x‖ / ‖x‖ | x ≠ 0 }
+```
+
+<CardGroup cols={2}>
+  <Card title="Hahn-Banach Theorem" icon="arrows-split-up-and-left">
+    Every bounded linear functional on a subspace extends to the whole space.
+
+    ```lean
+    #check exists_extension_norm_eq
+    ```
+  </Card>
+  <Card title="Banach Open Mapping" icon="door-open">
+    A surjective bounded linear map between Banach spaces is open.
+
+    ```lean
+    #check ContinuousLinearMap.isOpenMap
+    ```
+  </Card>
+  <Card title="Banach-Steinhaus" icon="shield">
+    Pointwise-bounded families of operators are uniformly bounded.
+
+    ```lean
+    #check banach_steinhaus
+    ```
+  </Card>
+  <Card title="Closed Graph Theorem" icon="chart-bar">
+    A linear map with closed graph between Banach spaces is continuous.
+
+    ```lean
+    #check LinearMap.continuous_of_isClosed_graph
+    ```
+  </Card>
+</CardGroup>
+
+```lean
+-- Dual space
+#check StrongDual                       -- The strong dual E'
+#check NormedSpace.inclusionInDoubleDualLi  -- Canonical inclusion E ↪ E''
+
+-- Absolutely convergent series
+#check Summable.of_norm   -- ∑ ‖aₙ‖ < ∞ → ∑ aₙ converges in a Banach space
+```
+
+### Hilbert Spaces
+
+```lean
+-- Inner product spaces
+#check InnerProductSpace    -- Hilbert space structure (real or complex)
+
+-- Cauchy-Schwarz inequality
+#check inner_mul_inner_self_le
+-- |⟪x, y⟫| ≤ ‖x‖ * ‖y‖  (actually the squared version)
+
+-- Orthogonal projection
+#check Submodule.orthogonalProjectionOnto
+#check Submodule.orthogonal   -- The orthogonal complement K⊥
+
+-- Fréchet-Riesz representation theorem
+#check InnerProductSpace.toDual
+-- E ≃ₗᵢ[𝕜] E'  (isometric isomorphism with dual)
+
+-- Existence of Hilbert basis
+#check exists_hilbertBasis
+
+-- Spectral theorem for self-adjoint operators
+#check IsSelfAdjoint
+#check LinearMap.IsSymmetric.eigenvectorBasis_apply_self_apply
+
+-- Lax-Milgram theorem
+#check IsCoercive.continuousLinearEquivOfBilin
+```
+
+## Asymptotics
+
+```lean
+-- Big-O and little-o notation
+#check Asymptotics.IsO       -- f = O(g) as x → a
+#check Asymptotics.IsLittleO -- f = o(g) as x → a
+
+-- Examples:
+-- sin x = O(x) as x → 0
+-- sin x = o(1) as x → ∞  (not quite right, but illustrates usage)
+```
+
+## Convexity
+
+```lean
+#check ConvexOn        -- f is convex on a set
+#check StrictConvexOn  -- Strict convexity
+
+-- Characterization via second derivative
+#check convexOn_of_deriv2_nonneg
+-- f'' ≥ 0 on (a, b) → f convex on [a, b]
+
+-- Jensen's inequality
+#check ConvexOn.map_sum_le      -- Finite sum version
+#check ConvexOn.map_integral_le -- Integral version
+
+-- Carathéodory's theorem
+#check convexHull_eq_union
+```
+
+## Complex Analysis
+
+```lean
+-- Cauchy integral formula
+#check DiffContOnCl.circleIntegral_sub_inv_smul
+
+-- Liouville's theorem: bounded entire functions are constant
+#check Differentiable.apply_eq_apply_of_bounded
+
+-- Maximum modulus principle
+#check Complex.eventually_eq_of_isLocalMax_norm
+
+-- Principle of isolated zeros
+#check AnalyticAt.eventually_eq_zero_or_eventually_ne_zero
+
+-- Analytic continuation
+#check AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq
+
+-- Schwarz lemma
+#check Complex.norm_le_norm_of_mapsTo_ball
+
+-- Fundamental theorem of algebra
+#check Complex.isAlgClosed   -- ℂ is algebraically closed
+```
+
+## Fourier Analysis
+
+```lean
+-- Fourier transform
+#check Real.fourier_eq                  -- Fourier transform as an integral
+#check MeasureTheory.fourierIntegral    -- General fourierIntegral definition
+
+-- Inversion formula
+#check Continuous.fourierInv_fourier_eq
+
+-- Riemann-Lebesgue lemma
+#check tendsto_integral_exp_inner_smul_cocompact
+
+-- Parseval's formula for Fourier series
+#check tsum_sq_fourierCoeff
+```
+
+## Distribution Theory
+
+```lean
+#check TestFunction       -- Smooth compactly supported test functions
+#check SchwartzMap        -- Schwartz space 𝒮(ℝⁿ)
+#check Distribution       -- Distributions (generalized functions)
+#check TemperedDistribution  -- Tempered distributions
+```
+
+<Tip>
+The analysis contributors maintain detailed module-level docstrings. For any specific theorem, searching [mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs/) by identifier gives the exact statement, proof, and surrounding context.
+</Tip>

@@ -1,0 +1,264 @@
+---
+title: "Mathlib Naming Conventions for Theorems and Definitions"
+sidebarTitle: "Naming"
+description: "Mathlib's naming rules for theorems, definitions, instances, and namespaces — including suffix conventions like _iff, _eq, _comm, and _assoc."
+---
+
+Mathlib's naming conventions are not merely aesthetic preferences — they form a systematic, predictable language that allows contributors to guess the name of a theorem before looking it up, and to understand a theorem's content from its name alone. Following these conventions precisely is one of the most important aspects of writing Mathlib-quality code, and reviewers will request renames before merging a PR that deviates from them.
+
+## The Core Principle: Names Reflect Statements
+
+Theorem names in Mathlib are constructed by concatenating the names of the mathematical objects and relations that appear in the statement. Given `Nat.add_comm`, you can infer that this is a theorem about `Nat`, involving `add`, stating `comm`utativity — without reading the statement at all.
+
+```lean
+#check Nat.add_comm
+-- Nat.add_comm : ∀ (n m : ℕ), n + m = m + n
+
+#check List.length_append
+-- List.length_append : ∀ {α : Type u_1} (l₁ l₂ : List α),
+--     (l₁ ++ l₂).length = l₁.length + l₂.length
+```
+
+## Casing Rules
+
+| Identifier kind | Convention | Example |
+|----------------|-----------|---------|
+| Types and structures | `UpperCamelCase` | `NNReal`, `FreeGroup`, `LinearMap` |
+| Typeclasses | `UpperCamelCase` | `CommRing`, `Fintype`, `MeasurableSpace` |
+| Definitions and functions | `lowerCamelCase` (in a namespace) | `Finset.card`, `List.getLast` |
+| Theorem and lemma names | `snake_case` | `Nat.add_comm`, `List.length_nil` |
+| Typeclass instances | `instUpperCamelCase` | `instDecidableEqNat`, `instAddMonoidNat` |
+| Namespace names | `UpperCamelCase` | `namespace Algebra`, `namespace List` |
+
+<Note>
+The distinction between definitions (`lowerCamelCase`) and theorems (`snake_case`) is intentional: it lets you immediately tell from a name whether something is a computable piece of data or a proof.
+</Note>
+
+## Namespace Conventions
+
+Namespaces mirror the module path and the primary type or concept being developed:
+
+```lean
+-- File: Mathlib/Algebra/Group/Defs.lean
+namespace Group
+  -- theorems here: Group.mul_comm, Group.inv_mul_cancel, etc.
+end Group
+
+-- File: Mathlib/Data/List/Basic.lean
+namespace List
+  -- theorems here: List.length_nil, List.append_assoc, etc.
+end List
+```
+
+When a theorem is about a specific type, it lives in that type's namespace. For example, results about `Finset` live in the `Finset` namespace, allowing dot notation: `s.card_union_add_card_inter t` instead of `Finset.card_union_add_card_inter s t`.
+
+## Suffix Conventions
+
+Suffixes encode the logical form of the statement. The table below lists the standard suffixes used across Mathlib.
+
+<Accordion title="_iff — biconditional characterizations">
+
+Use `_iff` when the statement is an `↔` (if and only if):
+
+```lean
+theorem Nat.lt_iff_add_one_le {n m : ℕ} : n < m ↔ n + 1 ≤ m
+theorem List.mem_append {a : α} {l₁ l₂ : List α} : a ∈ l₁ ++ l₂ ↔ a ∈ l₁ ∨ a ∈ l₂
+```
+
+</Accordion>
+
+<Accordion title="_eq — equalities">
+
+Use `_eq` when the statement is an `=`:
+
+```lean
+theorem List.length_nil : [].length = 0
+theorem Finset.card_empty : (∅ : Finset α).card = 0
+```
+
+Note: many equality theorems do not use `_eq` explicitly when the equality is already implied by the rest of the name (e.g., `List.length_append` is already clearly an equality statement).
+
+</Accordion>
+
+<Accordion title="_ne — disequalities">
+
+Use `_ne` when the statement is a `≠`:
+
+```lean
+theorem Nat.succ_ne_zero (n : ℕ) : n.succ ≠ 0
+```
+
+</Accordion>
+
+<Accordion title="_le, _lt, _ge, _gt — order facts">
+
+Use these suffixes for inequalities:
+
+```lean
+theorem Nat.le_add_right (n k : ℕ) : n ≤ n + k
+theorem Nat.lt_succ_self (n : ℕ) : n < n + 1
+theorem Finset.card_le_card {s t : Finset α} (h : s ⊆ t) : s.card ≤ t.card
+```
+
+</Accordion>
+
+<Accordion title="_comm and _assoc — algebraic laws">
+
+Use `_comm` for commutativity and `_assoc` for associativity:
+
+```lean
+theorem Nat.add_comm (n m : ℕ) : n + m = m + n
+theorem Nat.add_assoc (n m k : ℕ) : n + m + k = n + (m + k)
+theorem List.append_assoc (l₁ l₂ l₃ : List α) : l₁ ++ l₂ ++ l₃ = l₁ ++ (l₂ ++ l₃)
+```
+
+</Accordion>
+
+<Accordion title="_zero and _one — identity element facts">
+
+Use `_zero` for additive identities and `_one` for multiplicative identities:
+
+```lean
+theorem Nat.add_zero (n : ℕ) : n + 0 = n
+theorem Nat.zero_add (n : ℕ) : 0 + n = n
+theorem mul_one {M : Type*} [MulOneClass M] (a : M) : a * 1 = a
+theorem one_mul {M : Type*} [MulOneClass M] (a : M) : 1 * a = a
+```
+
+</Accordion>
+
+<Accordion title="_add and _mul — operation facts">
+
+These suffixes indicate that the statement involves the additive or multiplicative operation acting on a compound expression:
+
+```lean
+theorem Finset.card_add_card_compl (s : Finset α) : s.card + sᶜ.card = Fintype.card α
+theorem pow_mul (a : M) (m n : ℕ) : a ^ (m * n) = (a ^ m) ^ n
+```
+
+</Accordion>
+
+<Accordion title="_def — unfolding definitions">
+
+Use `_def` for lemmas that unfold or restate the definition of a term:
+
+```lean
+theorem Nat.succ_def (n : ℕ) : n.succ = n + 1
+theorem Set.mem_def {a : α} {s : Set α} : a ∈ s ↔ s a
+```
+
+</Accordion>
+
+## Prefix Conventions
+
+### `of_` — constructing from hypotheses
+
+Use `of_` as a prefix when a theorem or constructor produces a value *given* some hypothesis:
+
+```lean
+theorem Nat.Prime.of_dvd_prime {p q : ℕ} (hp : p.Prime) (h : p ∣ q) (hq : q.Prime) : p = q
+theorem List.Nodup.of_append_left {l₁ l₂ : List α} (h : (l₁ ++ l₂).Nodup) : l₁.Nodup
+```
+
+### `to_` — conversions between types
+
+Use `to_` as a prefix for functions or coercions that convert one type to another:
+
+```lean
+-- Converting a Finset to a Set
+def Finset.toSet (s : Finset α) : Set α
+
+-- A helper to convert a subtype to the ambient type
+theorem Subtype.val_eq_coe {α : Type*} {p : α → Prop} (x : Subtype p) : x.val = ↑x
+```
+
+## The Prime `'` Suffix
+
+A trailing prime (`'`) marks a variant of an existing theorem — typically one with:
+- Hypotheses in a different order
+- A weaker or asymmetric statement
+- An alternative formulation useful in specific contexts
+
+```lean
+-- Primary version
+theorem Nat.add_comm (n m : ℕ) : n + m = m + n
+
+-- Variant (hypothetical example)
+theorem Nat.add_comm' {n m : ℕ} : n + m = m + n
+```
+
+Use primes sparingly. Prefer a descriptive suffix that explains the variation when possible.
+
+## Typeclass Instances
+
+Instances use the `instXxx` prefix in `UpperCamelCase`, followed by the name of the typeclass and the type:
+
+```lean
+instance instDecidableEqNat : DecidableEq ℕ
+instance instAddMonoidNat : AddMonoid ℕ
+instance instCommRingInt : CommRing ℤ
+```
+
+When the instance is declared inside a namespace, the namespace is part of the qualified name but not the `inst` prefix:
+
+```lean
+namespace Finset
+instance instDecidableMem [DecidableEq α] (a : α) (s : Finset α) : Decidable (a ∈ s)
+end Finset
+```
+
+## Decidable Instances
+
+Decidable instances follow the same `inst` convention. The `Decidable` prefix appears in the typeclass name, not as a separate prefix on the instance:
+
+```lean
+instance instDecidablePrimeNat : DecidablePred Nat.Prime
+instance instDecidableEqList [DecidableEq α] : DecidableEq (List α)
+```
+
+## Plural vs. Singular
+
+- Use **singular** for a predicate or property: `Nat.Prime`, `List.Nodup`, `Set.Finite`.
+- Use **plural** for a set or collection of objects satisfying a property: `Nat.primes` (the set of all prime naturals).
+
+```lean
+-- Predicate (singular)
+def Nat.Prime (p : ℕ) : Prop
+
+-- Collection (plural) — hypothetical
+def Nat.primes : Finset ℕ := ...
+```
+
+## Avoiding Name Collisions
+
+Before settling on a name, always verify it is not already taken:
+
+```lean
+#check Nat.add_comm       -- check exact name
+#check @List.length_append -- check with explicit universes
+```
+
+You can also search the Mathlib docs at [leanprover-community.github.io/mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs) or use `exact?` and `apply?` in the editor to discover existing lemmas.
+
+<Tip>
+If a lemma you want to add already exists under a slightly different name, use `alias` or `theorem myAlias := existingLemma` to provide the name you expect without duplicating the proof.
+</Tip>
+
+## Worked Examples
+
+```lean
+-- ✅ Correct Mathlib-style names
+theorem Finset.sum_add_sum_compl {α β : Type*} [AddCommMonoid β]
+    [Fintype α] (f : α → β) (s : Finset α) :
+    ∑ x in s, f x + ∑ x in sᶜ, f x = ∑ x, f x
+
+theorem List.length_reverse {α : Type*} (l : List α) :
+    l.reverse.length = l.length
+
+instance instRingInt : Ring ℤ
+
+-- ❌ Non-Mathlib-style names to avoid
+theorem commutativity_of_nat_add ...     -- too verbose, wrong style
+theorem NatAddComm ...                   -- wrong case for theorem
+theorem add_comm_Nat ...                 -- type suffix instead of prefix
+```

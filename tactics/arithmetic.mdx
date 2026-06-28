@@ -1,0 +1,260 @@
+---
+title: "Arithmetic Tactics in Mathlib: linarith, ring, omega"
+sidebarTitle: "Arithmetic"
+description: "Reference for Mathlib's arithmetic tactics — linarith, nlinarith, norm_num, ring, ring_nf, abel, omega, and field_simp — with examples."
+---
+
+Mathlib provides a suite of arithmetic tactics that act as decision procedures for numeric goals. Rather than constructing explicit proof terms about inequalities, equalities, or numeric computations, these tactics analyze the algebraic structure of the goal and automatically discharge it. Together they cover linear and nonlinear arithmetic, ring identities, numeric evaluation, additive group equalities, and field simplification.
+
+## `linarith`
+
+`linarith` attempts to find a contradiction between hypotheses that are linear (in)equalities, or equivalently proves a linear inequality by assuming its negation and deriving `False`. It works over any type that instantiates `CommRing`, `LinearOrder`, and `IsStrictOrderedRing`, including the concrete types `ℕ`, `ℤ`, `ℚ`, and `ℝ`.
+
+The tactic collects all linear hypotheses of the form `a R b` (where `R ∈ {<, ≤, =, ≥, >}`), rearranges them into the form `tᵢ Rᵢ 0`, and then uses a Simplex Algorithm oracle to find natural-number coefficients `kᵢ` witnessing unsatisfiability.
+
+<Tabs>
+  <Tab title="Basic usage">
+```lean
+example (x y z : ℚ) (h1 : 2 * x < 3 * y) (h2 : -4 * x + 2 * z < 0)
+    (h3 : 12 * y - 4 * z < 0) : False := by
+  linarith
+
+example (x y : ℝ) (h1 : x > 2) (h2 : y > 3) : x + y > 5 := by
+  linarith
+```
+  </Tab>
+  <Tab title="Extra hints">
+```lean
+-- Pass additional proof terms as extra hypotheses
+example (x : ℝ) (hx : x > 0) : x ^ 2 + x > 0 := by
+  nlinarith [sq_nonneg x]
+
+-- Use only specific hypotheses, ignore the rest
+example (a b c : ℝ) (h1 : a ≤ b) (h2 : b ≤ c) (hignore : a > 100) : a ≤ c := by
+  linarith only [h1, h2]
+```
+  </Tab>
+  <Tab title="Configuration">
+```lean
+-- linarith! uses stronger reducibility (can identify id x with x)
+example (x : ℚ) : id x ≥ x := by linarith!
+
+-- splitNe allows case-splitting on ≠ hypotheses
+example (x y : ℝ) (h : x ≠ y) (h2 : x ≥ y) : x > y := by
+  linarith (config := { splitNe := true })
+```
+  </Tab>
+</Tabs>
+
+**Syntax reference:**
+
+```lean
+linarith                                   -- uses all linear hypotheses
+linarith [term1, term2]                    -- adds extra proof terms
+linarith only [h1, h2, term1]             -- uses only the listed hypotheses
+linarith!                                  -- stronger reducibility mode
+linarith (config := { splitNe := true })   -- custom configuration
+linarith?                                  -- prints a minimized hypothesis list
+```
+
+<Note>
+`linarith` is not complete for `ℕ` and `ℤ` (non-dense orders). For goals involving integer division or modular arithmetic, use `omega` instead.
+</Note>
+
+<Accordion title="How linarith works internally">
+`linarith` uses the Simplex Algorithm (sparse mode by default) as its oracle. It rearranges all linear hypotheses into the form `tᵢ Rᵢ 0` and searches for non-negative coefficients `kᵢ` such that `∑ kᵢ tᵢ = 0` with at least one strict inequality. Once a certificate is found, it is verified by the `ring` tactic. You can switch to the Fourier-Motzkin oracle with `linarith (oracle := .fourierMotzkin)`, or to the dense Simplex variant with `linarith (oracle := .simplexAlgorithmDense)`.
+
+Trace intermediate steps with `set_option trace.linarith true`.
+</Accordion>
+
+---
+
+## `nlinarith`
+
+`nlinarith` extends `linarith` with a preprocessing step that handles some nonlinear arithmetic goals. Before calling the linear oracle, it adds auxiliary hypotheses derived from products of existing hypotheses.
+
+Specifically, for every subterm `a ^ 2` or `a * a`, it adds `0 ≤ a ^ 2`. For every pair of hypotheses `a₁ R₁ b₁` and `a₂ R₂ b₂`, it adds `0 R' (b₁ - a₁) * (b₂ - a₂)`. This often suffices to reduce a nonlinear goal to a linear one.
+
+```lean
+example (n : ℕ) (h : n ≥ 1) : n * n ≥ n := by
+  nlinarith
+
+example (a b : ℝ) (ha : 0 ≤ a) (hb : 0 ≤ b) : a * b ≥ 0 := by
+  nlinarith
+
+-- Provide an explicit auxiliary hint when auto-preprocessing is insufficient
+example (x y : ℝ) (hx : x > 0) (hy : y > 0) : x ^ 2 + y ^ 2 > 0 := by
+  nlinarith [sq_nonneg x, sq_nonneg y]
+```
+
+**Syntax reference** (inherits all options from `linarith`):
+
+```lean
+nlinarith
+nlinarith [sq_nonneg x, mul_self_nonneg y]
+nlinarith only [h1, h2]
+nlinarith!
+```
+
+---
+
+## `norm_num`
+
+`norm_num` is a verified normalizer for numeric expressions. It can evaluate arithmetic expressions, test primality, check divisibility, compute with rational numbers, and handle square roots and modular arithmetic. It works by reducing numeric goals to kernel-checkable computations.
+
+<Tabs>
+  <Tab title="Numeric goals">
+```lean
+example : (2 : ℚ) / 3 + 1 / 6 = 5 / 6 := by norm_num
+
+example : (10 : ℤ) % 3 = 1 := by norm_num
+
+example : (2 : ℝ) ^ 10 = 1024 := by norm_num
+```
+  </Tab>
+  <Tab title="Primality">
+```lean
+example : Nat.Prime 127 := by norm_num
+
+example : Nat.Prime 1000003 := by norm_num
+
+example : ¬ Nat.Prime 1001 := by norm_num
+```
+  </Tab>
+  <Tab title="Variants">
+```lean
+-- norm_num1: a single-step version (does not recurse into subgoals)
+example : (3 : ℕ) + 4 = 7 := by norm_num1
+
+-- norm_num at h: normalize a hypothesis
+example (h : (2 : ℝ) * 3 = 7) : False := by norm_num at h
+
+-- norm_num extension lemmas can be loaded with [...]
+example : Nat.sqrt 16 = 4 := by norm_num
+```
+  </Tab>
+</Tabs>
+
+<Tip>
+`norm_num` is extensible: Mathlib defines `@[norm_num]`-tagged extension lemmas that teach it how to evaluate new functions. You can write your own extensions for custom numeric functions.
+</Tip>
+
+---
+
+## `ring` and `ring_nf`
+
+`ring` proves equalities that hold in any commutative (semi)ring by normalizing both sides to a canonical polynomial form and checking syntactic equality. It handles `+`, `-`, `*`, `^` (with natural-number exponents), and numeric literals.
+
+`ring_nf` applies the same normalization without requiring the goal to be a closed equality — it rewrites the expression into normal form and leaves any remaining goals for other tactics.
+
+<Tabs>
+  <Tab title="ring">
+```lean
+example (a b : ℤ) : (a + b) ^ 3 = a ^ 3 + 3 * a ^ 2 * b + 3 * a * b ^ 2 + b ^ 3 := by
+  ring
+
+example (x y z : ℝ) : (x - y) * (x + y) = x ^ 2 - y ^ 2 := by
+  ring
+
+example (n : ℕ) : (n + 1) ^ 2 = n ^ 2 + 2 * n + 1 := by
+  ring
+```
+  </Tab>
+  <Tab title="ring_nf">
+```lean
+-- ring_nf normalizes without closing the goal
+example (a b c : ℝ) (h : a ^ 2 + 2 * a * b + b ^ 2 = c) : (a + b) ^ 2 = c := by
+  ring_nf
+  exact h
+
+-- ring_nf at h: normalize a hypothesis
+example (a b : ℝ) (h : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2) : True := by
+  ring_nf at h
+  trivial
+```
+  </Tab>
+  <Tab title="ring!">
+```lean
+-- ring! uses a stronger reducibility setting
+-- useful when definitions need to be unfolded
+example (a b : ℤ) (h : a = b) : a + a = 2 * b := by
+  ring_nf
+  linarith
+```
+  </Tab>
+</Tabs>
+
+<Warning>
+`ring` works over (semi)rings and does **not** handle division. For goals involving `/`, use `field_simp` first to clear denominators, then `ring`.
+</Warning>
+
+---
+
+## `abel`
+
+`abel` solves equations in additive commutative monoids and groups. It is analogous to `ring` but restricted to the `+` operation, which means it works on types that are additive commutative groups but not full rings — for example, free abelian groups, `ZMod n`, or abstract `AddCommGroup` instances.
+
+`abel` and its variants also work as `conv` tactics.
+
+```lean
+example [AddCommMonoid α] (a b : α) : a + (b + a) = a + a + b := by abel
+
+example [AddCommGroup α] (a : α) : (3 : ℤ) • a = a + (2 : ℤ) • a := by abel
+
+example [AddCommGroup α] (a b c : α) : a + b + c = c + b + a := by abel
+```
+
+**Variants:**
+
+```lean
+abel          -- closes the goal if it is provable by additive commutativity/associativity
+abel1         -- like abel but fails if goal is not directly provable (no ring fallback)
+abel_nf       -- normalizes the expression without closing the goal
+abel_nf at h  -- normalizes in a hypothesis
+abel!         -- uses a more aggressive reducibility setting
+```
+
+---
+
+## `omega`
+
+`omega` is a complete decision procedure for linear arithmetic over `ℕ` and `ℤ`. Unlike `linarith`, it handles integer division (`/`) and modular arithmetic (`%`), making it the right choice for goals about natural number or integer computations.
+
+```lean
+example (n : ℕ) : n % 2 = 0 ∨ n % 2 = 1 := by omega
+
+example (a b : ℤ) (h : a % 3 = 1) (h2 : b % 3 = 2) : (a + b) % 3 = 0 := by omega
+
+example (n : ℕ) (h : n > 5) : n ≥ 6 := by omega
+
+-- omega handles ℕ subtraction (truncated)
+example (n : ℕ) (h : n ≥ 3) : n - 3 + 3 = n := by omega
+```
+
+<Tip>
+Prefer `omega` over `linarith` for `ℕ` and `ℤ` goals that do not involve multiplication of variables. It is both faster and complete for these theories.
+</Tip>
+
+---
+
+## `field_simp`
+
+`field_simp` simplifies expressions in a field (or more generally a `DivisionRing`) by clearing all denominators and applying simp lemmas about division. It is most useful as a preprocessing step before `ring` for goals involving `/`.
+
+```lean
+example (x : ℝ) (hx : x ≠ 0) : x / x = 1 := by
+  field_simp
+
+example (a b : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) : a / b + b / a = (a ^ 2 + b ^ 2) / (a * b) := by
+  field_simp
+  ring
+
+-- field_simp can simplify hypotheses too
+example (x y : ℝ) (hx : x ≠ 0) (h : y / x = 2) : y = 2 * x := by
+  field_simp at h
+  linarith
+```
+
+<Note>
+`field_simp` requires non-zeroness hypotheses to be in the local context (or passed explicitly with `field_simp [h1, h2]`). It uses `ne_of_gt` and similar lemmas automatically when it can find them.
+</Note>

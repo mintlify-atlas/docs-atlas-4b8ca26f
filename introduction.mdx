@@ -1,0 +1,125 @@
+---
+title: "Mathlib: The Lean 4 Mathematical Library"
+sidebarTitle: "Introduction"
+description: "Mathlib4 is the community-maintained math library for Lean 4, offering 8000+ modules spanning algebra, analysis, topology, number theory, and category theory."
+---
+
+Mathlib (short for *mathematical library*) is the central, community-maintained library of formalized mathematics for the [Lean 4 theorem prover](https://leanprover.github.io). It contains over 8,000 modules covering a broad sweep of undergraduate and graduate mathematics, together with the tactics and programming infrastructure needed to develop proofs interactively. Whether you are a research mathematician looking to mechanically verify a result, a computer scientist studying type theory, or a student taking your first steps in formal proof, Mathlib is the starting point for working mathematics in Lean 4.
+
+## What Is Mathlib?
+
+Mathlib is not a single monolithic file — it is an actively developed ecosystem hosted on GitHub under [leanprover-community/mathlib4](https://github.com/leanprover-community/mathlib4). At its core it provides three things:
+
+<CardGroup cols={2}>
+  <Card title="Mathematical Theories" icon="sigma">
+    Thousands of definitions, lemmas, and theorems across algebra, analysis, topology, number theory, category theory, and beyond.
+  </Card>
+  <Card title="Proof Tactics" icon="wand-magic-sparkles">
+    Powerful tactics like `ring`, `linarith`, `norm_num`, `aesop`, and `decide` that automate large classes of routine proof steps.
+  </Card>
+  <Card title="Programming Infrastructure" icon="gear">
+    Metaprogramming utilities, linters, and build tooling (via Lake) that make large-scale formal development practical.
+  </Card>
+  <Card title="Extensive Documentation" icon="book-open">
+    Auto-generated API docs, module docstrings, and community-written guides covering both the library and Lean 4 itself.
+  </Card>
+</CardGroup>
+
+## Who Is Mathlib For?
+
+Mathlib is designed to serve a wide audience:
+
+- **Research mathematicians** who want to formally verify proofs or explore whether a conjecture follows from known results.
+- **Computer science researchers** working on programming languages, type theory, logic, or verified software.
+- **Students** learning formal proof techniques as part of a course or self-study program.
+- **Educators** building course materials around interactive theorem proving.
+- **Software engineers** interested in provably correct algorithms and data structures.
+
+No prior experience with Lean is required to start experimenting, though familiarity with undergraduate mathematics will help you navigate the library.
+
+## Brief History
+
+Mathlib originated as `mathlib` for Lean 3, growing from a small collection of lemmas into one of the largest formal mathematics libraries in existence. When the Lean community transitioned to Lean 4 — a ground-up redesign of the language with a new metaprogramming framework, a revised type theory, and the Lake build system — the entire library was ported. This porting effort, which used the automated tool `mathport` together with large-scale manual revision, resulted in `mathlib4`: a modernized library that takes full advantage of Lean 4's expressive power.
+
+Today Mathlib4 is maintained by an international team of dozens of contributors and receives hundreds of pull requests each month.
+
+## Scope of the Library
+
+Mathlib covers a remarkably wide range of mathematical subjects. The following list gives a high-level overview:
+
+| Area | Representative content |
+|---|---|
+| **Algebra** | Groups, rings, fields, modules, linear algebra, Galois theory |
+| **Number Theory** | Divisibility, primes, modular arithmetic, algebraic number theory |
+| **Analysis** | Limits, continuity, derivatives, integration (Bochner & Lebesgue) |
+| **Topology** | Metric spaces, topological spaces, filters, uniform spaces |
+| **Measure Theory** | σ-algebras, measures, probability |
+| **Category Theory** | Functors, natural transformations, adjunctions, limits, abelian categories |
+| **Geometry** | Manifolds, differential geometry, convexity |
+| **Combinatorics** | Graphs, finite sets, generating functions |
+| **Logic & Set Theory** | Ordinals, cardinals, model theory |
+
+For a full overview aimed at mathematicians, see the [Mathlib overview](https://leanprover-community.github.io/mathlib-overview.html) and the [currently covered theories](https://leanprover-community.github.io/theories.html) page.
+
+## The Mathlib Community
+
+Mathlib is a collaborative project. The primary communication channel is the [Lean Zulip chat](https://leanprover.zulipchat.com/), where streams such as `#mathlib4` and `#new members` host thousands of active conversations. You are welcome to join at any level of expertise — questions from beginners are explicitly encouraged.
+
+Other community resources include:
+
+- **GitHub**: [leanprover-community/mathlib4](https://github.com/leanprover-community/mathlib4) — issues, pull requests, and the wiki.
+- **Zulip archive**: [leanprover-community.github.io/archive](https://leanprover-community.github.io/archive/) — a searchable archive of public discussions.
+- **Community website**: [leanprover-community.github.io](https://leanprover-community.github.io) — guides, learning resources, and the contributor handbook.
+
+### Current Maintainers
+
+Mathlib is overseen by a team of active maintainers who review pull requests and manage the library's direction. A few notable names (with their primary areas):
+
+- **Anne Baanen** — algebra, number theory, tactics
+- **Kevin Buzzard** — algebra, number theory, algebraic geometry
+- **Mario Carneiro** — Lean formalization, tactics, type theory
+- **Johan Commelin** — algebra, number theory, category theory
+- **Sébastien Gouëzel** — topology, calculus, geometry, analysis
+- **Kim Morrison** — category theory, tactics
+
+For the complete list with affiliations, see [leanprover-community.github.io/teams/maintainers.html](https://leanprover-community.github.io/teams/maintainers.html).
+
+## How to Cite Mathlib
+
+If you use Mathlib in academic work, please cite the CPP 2020 paper:
+
+> The mathlib Community. *The Lean Mathematical Library.* CPP 2020.
+> [https://doi.org/10.1145/3372885.3373824](https://doi.org/10.1145/3372885.3373824)
+
+```bibtex
+@inproceedings{mathlib2020,
+  author    = {{The mathlib Community}},
+  title     = {The {L}ean {M}athematical {L}ibrary},
+  booktitle = {Proceedings of the 9th {ACM} {SIGPLAN} International Conference
+               on Certified Programs and Proofs},
+  series    = {CPP 2020},
+  publisher = {ACM},
+  address   = {New Orleans, LA, USA},
+  year      = {2020},
+  month     = jan,
+  doi       = {10.1145/3372885.3373824},
+  url       = {https://doi.org/10.1145/3372885.3373824}
+}
+```
+
+## Further Reading
+
+<CardGroup cols={2}>
+  <Card title="Mathlib4 API Docs" icon="code" href="https://leanprover-community.github.io/mathlib4_docs/index.html">
+    Auto-generated documentation for every definition and theorem in Mathlib.
+  </Card>
+  <Card title="Learning Lean" icon="graduation-cap" href="https://leanprover-community.github.io/learn.html">
+    Curated list of books, tutorials, and courses for learning Lean 4.
+  </Card>
+  <Card title="Mathematics in Lean" icon="infinity" href="https://leanprover-community.github.io/mathematics_in_lean/">
+    The community's interactive textbook — the best starting point for newcomers.
+  </Card>
+  <Card title="Contributing to Mathlib" icon="code-branch" href="https://leanprover-community.github.io/contribute/index.html">
+    Style guide, naming conventions, and PR workflow for new contributors.
+  </Card>
+</CardGroup>

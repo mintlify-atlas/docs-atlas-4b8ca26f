@@ -1,0 +1,275 @@
+---
+title: "Category Theory in Mathlib: Functors, Limits, and Sheaves"
+sidebarTitle: "Category Theory"
+description: "Mathlib's category theory library covers functors, natural transformations, adjunctions, limits, monoidal categories, abelian categories, and Grothendieck topologies."
+---
+
+Mathlib's category theory library, rooted at `Mathlib/CategoryTheory/`, is one of the most comprehensive formalizations of abstract category theory in any proof assistant. It provides the foundational language — categories, functors, natural transformations, adjunctions, limits and colimits — and builds from there to monoidal categories, abelian categories, triangulated categories, homological algebra, and the Grothendieck topos machinery needed for modern algebraic geometry. The library is designed so that concrete mathematical categories (groups, rings, modules, topological spaces, schemes) are all instances of the abstract framework, enabling full code reuse across mathematical domains.
+
+## Categories
+
+```lean
+-- The Category type class
+#check CategoryTheory.Category
+-- Category C : has Hom sets, identity morphisms, composition, and the usual axioms
+
+-- Small categories (morphisms form a type in the same universe)
+#check CategoryTheory.SmallCategory
+-- SmallCategory C : Category C where ∀ X Y : C, Hom X Y : Type*
+
+-- Isomorphisms
+#check CategoryTheory.Iso
+-- Iso X Y : a pair of inverse morphisms X ⟶ Y and Y ⟶ X
+
+-- The opposite category
+#check CategoryTheory.Opposite   -- Cᵒᵖ : reverses all morphisms
+```
+
+<CardGroup cols={2}>
+  <Card title="Concrete Categories" icon="shapes">
+    Mathlib provides bundled categories for common structures.
+
+    ```lean
+    #check GroupCat     -- Category of groups
+    #check RingCat      -- Category of rings
+    #check ModuleCat    -- Category of R-modules
+    #check TopCat       -- Category of topological spaces
+    #check AlgCat       -- Category of R-algebras
+    ```
+  </Card>
+  <Card title="Comma Categories" icon="code">
+    ```lean
+    #check CategoryTheory.Comma
+    -- Comma (F : A ⥤ C) (G : B ⥤ C)
+    -- Objects: triples (a, b, f : F a ⟶ G b)
+    ```
+  </Card>
+</CardGroup>
+
+## Functors and Natural Transformations
+
+```lean
+-- Functors
+#check CategoryTheory.Functor
+-- Functor C D : maps objects and morphisms, preserving id and composition
+-- Written F : C ⥤ D in Lean
+
+-- Functor composition
+#check CategoryTheory.Functor.comp   -- F ⋙ G
+
+-- Natural transformations
+#check CategoryTheory.NatTrans
+-- NatTrans F G : a family of morphisms αX : F X ⟶ G X, natural in X
+-- Written α : F ⟶ G (using Lean's morphism notation)
+
+-- Natural isomorphisms
+#check CategoryTheory.NatIso    -- F ≅ G : a natural transformation with iso components
+
+-- The functor category
+-- [C, D] or C ⥤ D : category whose objects are functors and morphisms are nat. trans.
+```
+
+## The Yoneda Lemma
+
+The Yoneda lemma is fully formalized and used throughout the library:
+
+```lean
+-- The Yoneda embedding
+#check CategoryTheory.yoneda
+-- yoneda : C ⥤ (Cᵒᵖ ⥤ Type*)
+-- yoneda.obj X = Hom(–, X) : the representable presheaf
+
+-- Yoneda lemma: natural transformations from Hom(–, X) to F correspond to F X
+#check CategoryTheory.yonedaEquiv
+-- yonedaEquiv : (yoneda.obj X ⟶ F) ≃ F.obj X
+
+-- Fully faithful embedding
+#check CategoryTheory.yoneda.isFaithful
+#check CategoryTheory.yoneda.isFull
+```
+
+## Adjunctions
+
+```lean
+-- Adjunction F ⊣ G : F is left adjoint to G
+#check CategoryTheory.Adjunction
+-- Adjunction F G : has unit η : 𝟭 C ⟶ G ⋙ F and counit ε : F ⋙ G ⟶ 𝟭 D
+
+-- Unit and counit
+#check CategoryTheory.Adjunction.unit
+#check CategoryTheory.Adjunction.counit
+
+-- Left adjoints preserve colimits, right adjoints preserve limits
+#check CategoryTheory.Adjunction.isLeftAdjoint   -- ∃ right adjoint
+#check CategoryTheory.Adjunction.isRightAdjoint  -- ∃ left adjoint
+
+-- Monads (from adjunctions)
+#check CategoryTheory.Monad   -- A monad T on C with μ : T² ⟹ T, η : Id ⟹ T
+```
+
+## Limits and Colimits
+
+```lean
+-- Limits
+#check CategoryTheory.Limits.IsLimit
+-- IsLimit c : c is a limit cone for a diagram F
+
+#check CategoryTheory.Limits.IsColimit
+-- IsColimit c : c is a colimit cocone for F
+
+-- Existence (via HasLimit and HasColimit type classes)
+#check CategoryTheory.Limits.HasLimit
+#check CategoryTheory.Limits.HasColimit
+
+-- Specific limits
+#check CategoryTheory.Limits.prod         -- Binary product X × Y
+#check CategoryTheory.Limits.equalizer    -- Equalizer of f, g : X ⟶ Y
+#check CategoryTheory.Limits.pullback     -- Pullback / fiber product
+#check CategoryTheory.Limits.terminal     -- Terminal object
+
+-- Specific colimits
+#check CategoryTheory.Limits.coprod       -- Binary coproduct X ⊔ Y
+#check CategoryTheory.Limits.coequalizer  -- Coequalizer
+#check CategoryTheory.Limits.pushout      -- Pushout
+#check CategoryTheory.Limits.initial      -- Initial object
+```
+
+<Note>
+Mathlib uses the `HasLimitsOfShape` and `HasColimitsOfShape` type classes to express that a category has all limits (resp. colimits) of a given shape. Most concrete categories (`GroupCat`, `ModuleCat`, etc.) are equipped with appropriate instances.
+</Note>
+
+## Monoidal Categories
+
+```lean
+-- Monoidal category: has a tensor product ⊗ and unit object
+#check CategoryTheory.MonoidalCategory
+-- MonoidalCategory C : C has ⊗, 𝟙, and coherence isomorphisms
+
+-- Braided monoidal category
+#check CategoryTheory.BraidedCategory
+
+-- Symmetric monoidal category
+#check CategoryTheory.SymmetricCategory
+
+-- Cartesian closed category
+#check CategoryTheory.MonoidalClosed
+
+-- Examples:
+-- ModuleCat R is symmetric monoidal under ⊗[R]
+-- Finset is monoidal under disjoint union
+```
+
+## Abelian Categories
+
+```lean
+-- Abelian category
+#check CategoryTheory.Abelian
+-- An additive category with all finite limits/colimits, where every
+-- mono is a kernel and every epi is a cokernel
+
+-- Preadditive categories
+#check CategoryTheory.Preadditive  -- Hom sets are abelian groups
+
+-- Additive categories
+#check CategoryTheory.Additive     -- Has finite biproducts
+
+-- The category of R-modules is abelian
+-- instance : Abelian (ModuleCat R) := ...
+
+-- Exact sequences
+#check CategoryTheory.ShortExact
+-- 0 ⟶ A ⟶ B ⟶ C ⟶ 0 is a short exact sequence
+```
+
+## Homological Algebra
+
+```lean
+-- Chain complexes
+#check ChainComplex
+-- ChainComplex C ℕ : sequence ... A₂ → A₁ → A₀ with d² = 0
+
+-- Homology of a complex
+#check HomologicalComplex.homology
+
+-- Derived functors live in the derived category (partially formalized)
+
+-- Ext groups via projective resolutions
+-- (see Mathlib.Algebra.Category.ModuleCat.Ext)
+```
+
+## Grothendieck Topologies and Sheaves
+
+```lean
+-- A Grothendieck topology on a category C
+#check CategoryTheory.GrothendieckTopology
+-- Assigns to each object X a collection of covering sieves
+
+-- Sieves
+#check CategoryTheory.Sieve   -- A sieve on X : a subfunctor of Hom(–, X)
+
+-- Presheaves and sheaves
+#check CategoryTheory.Presheaf    -- A functor Cᵒᵖ ⥤ D
+#check CategoryTheory.Sheaf       -- A presheaf satisfying the sheaf condition
+
+-- Sheafification
+#check CategoryTheory.GrothendieckTopology.sheafify
+
+-- The category of sheaves (a topos when D = Type*)
+#check CategoryTheory.Sheaf.category
+```
+
+<CardGroup cols={2}>
+  <Card title="Presheaved Spaces" icon="layer-group">
+    Used as the foundation for scheme theory.
+
+    ```lean
+    #check AlgebraicGeometry.PresheafedSpace
+    #check AlgebraicGeometry.SheafedSpace
+    ```
+  </Card>
+  <Card title="Locally Ringed Spaces" icon="circle-dot">
+    ```lean
+    #check AlgebraicGeometry.LocallyRingedSpace
+    -- A sheafed space where each stalk is a local ring
+    ```
+  </Card>
+</CardGroup>
+
+## Triangulated Categories and Derived Categories
+
+```lean
+-- Triangulated category
+-- (partially formalized, see Mathlib.CategoryTheory.Triangulated)
+#check CategoryTheory.Triangulated.Triangle
+-- A distinguished triangle X ⟶ Y ⟶ Z ⟶ X[1]
+
+-- The homotopy category of an additive category
+#check CategoryTheory.HomotopyCategory
+```
+
+## Further Examples and Instances
+
+<Accordion title="Algebraic Categories as Category-Theoretic Instances">
+
+Mathlib proves that standard mathematical categories satisfy the abstract axioms:
+
+```lean
+-- Groups form an abelian category (for Ab)
+-- instance : Abelian (ModuleCat R)
+
+-- Limits in the category of groups
+-- GroupCat has all small limits and filtered colimits
+
+-- The free-forgetful adjunction
+#check CategoryTheory.Adjunction  -- Free : Set ⊣ Forget : Grp → Set
+
+-- Kan extensions
+#check CategoryTheory.Limits.leftKanExtension
+#check CategoryTheory.Limits.rightKanExtension
+```
+
+</Accordion>
+
+<Tip>
+The category theory library is organized so that import of `Mathlib.CategoryTheory.Category.Basic` gives just the foundational definitions. Import `Mathlib.CategoryTheory.Limits.HasLimits` for limit machinery, and `Mathlib.CategoryTheory.Abelian.Basic` for abelian categories.
+</Tip>

@@ -1,0 +1,205 @@
+---
+title: "Contributing to Mathlib4: PR Workflow and Community"
+sidebarTitle: "Guidelines"
+description: "How to contribute to Mathlib4 — the PR workflow, Bors merge queue, Zulip community, linting requirements, and the autolabel tool for topic labels."
+---
+
+Mathlib4 is a collaborative, community-driven project and welcomes contributions of all kinds — new theorems, improved proofs, tactics, documentation, and infrastructure fixes. Whether you are formalizing a piece of undergraduate mathematics or a cutting-edge research result, the community is here to help you get your work merged. This page walks through everything you need to know before opening your first pull request.
+
+## Prerequisites
+
+Before contributing you should have the following in place:
+
+- **Lean 4 and `elan`** installed via the [official getting-started guide](https://leanprover-community.github.io/get_started.html). The `elan` toolchain manager handles Lean version pinning automatically.
+- **Lake** — Lean's build system, which ships with every `elan`-managed toolchain. No separate installation is needed.
+- **A GitHub account** with a fork of [leanprover-community/mathlib4](https://github.com/leanprover-community/mathlib4).
+- **Familiarity with Lean 4 syntax** — the [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/) book and the [Lean 4 survival guide for Lean 3 users](https://github.com/leanprover-community/mathlib4/wiki/Lean-4-survival-guide-for-Lean-3-users) are good starting points.
+
+<Note>
+You do not need to build all of Mathlib from scratch. Running `lake exe cache get` downloads precompiled `.olean` files and will save many hours of compilation time.
+</Note>
+
+## Community and Support
+
+The main communication hub for Mathlib development is the **Zulip chat** at [leanprover.zulipchat.com](https://leanprover.zulipchat.com). The `#mathlib4` stream is the right place to:
+
+- Introduce yourself and your contribution plans.
+- Ask for guidance on whether a formalization fits Mathlib's scope.
+- Get code review advice before opening a formal PR.
+- Discuss design questions about definitions and theorem names.
+
+All questions — from beginner to expert — are welcomed. You can also browse the [public Zulip archive](https://leanprover-community.github.io/archive/) without creating an account.
+
+## Code of Conduct
+
+Mathlib follows the [Contributor Covenant Code of Conduct](https://github.com/leanprover-community/mathlib4/blob/master/CODE_OF_CONDUCT.md). Participation in any community space — Zulip, GitHub issues, PRs, or elsewhere — requires:
+
+- **Empathy and kindness** toward all contributors, regardless of experience level.
+- **Respect for differing opinions** and the willingness to give and receive constructive feedback gracefully.
+- **Constructive engagement**: focus on what is best for the community, not just for the individual.
+- **Zero tolerance** for harassment, insulting comments, personal attacks, or the publication of others' private information.
+
+Violations can be reported through the [reporting form](https://docs.google.com/forms/d/e/1FAIpQLSdEjlFqJQV65F-yzRHl-lyWAt7TSUW1axPiQK3RyV67iu1h6Q/viewform) or directly over Zulip to community leaders.
+
+## Pull Request Workflow
+
+<Steps>
+
+### Fork the repository and create a branch
+
+Fork [leanprover-community/mathlib4](https://github.com/leanprover-community/mathlib4) on GitHub, clone your fork locally, and create a feature branch with a descriptive name:
+
+```bash
+git clone https://github.com/<your-username>/mathlib4.git
+cd mathlib4
+git checkout -b feat/add-my-theorem
+```
+
+### Fetch the precompiled `.olean` cache
+
+Always do this before building. It downloads cached build artifacts from Mathlib's CI servers and avoids recompiling the entire library from scratch:
+
+```bash
+lake exe cache get
+```
+
+If the cache download fails or produces unexpected results, try the force-refresh variant:
+
+```bash
+lake exe cache get!
+```
+
+### Make your changes
+
+Add new Lean files under the appropriate `Mathlib/` subdirectory, or edit existing ones. Every new file must:
+
+- Begin with a copyright and author header.
+- Include a module docstring (`/-! ... -/`) describing its contents.
+- Be registered in the top-level import list (see Step 6).
+
+See the [Style Guide](./style-guide) and [Naming Conventions](./naming-conventions) pages for the detailed rules that reviewers enforce.
+
+### Build and verify your changes
+
+Build the specific file you modified to check for errors:
+
+```bash
+lake build Mathlib.Algebra.Group.Defs
+```
+
+Or build all of Mathlib (slower, but required before opening a PR):
+
+```bash
+lake build
+```
+
+### Run the full test suite
+
+```bash
+lake test
+```
+
+This executes all tests defined under `MathlibTest/`. A clean run is required before requesting review.
+
+### Register any new files
+
+If you added a new `.lean` file to the library, regenerate the top-level `Mathlib.lean` import file:
+
+```bash
+lake exe mk_all
+```
+
+Commit the updated `Mathlib.lean` alongside your new file.
+
+### Run the style linter
+
+```bash
+lake exe lint-style
+```
+
+This runs both the Python-based text linters and the Lean-based style linters. Fix all reported issues before opening a PR. See [Building & Testing](./building-testing) for a full reference of available linting commands.
+
+### Open a Pull Request
+
+Push your branch to your fork and open a PR against the `master` branch of `leanprover-community/mathlib4`. The PR title must satisfy the format checked by `check_title_labels` — keep it concise, descriptive, and in the imperative mood (e.g., `feat(Algebra.Group): add commutativity lemma for ...`).
+
+In the PR description, briefly explain:
+- What mathematical content is being added or changed.
+- Why it belongs in Mathlib (scope justification).
+- Any open design questions you would like reviewers to weigh in on.
+
+### Address review feedback
+
+Reviewers will comment directly on your diff. Address all requested changes by pushing additional commits to the same branch. The CI will re-run automatically on each push.
+
+### Bors merges approved PRs
+
+Mathlib uses **Bors** as its merge bot. A reviewer with merge rights approves your PR by posting:
+
+```
+bors r+
+```
+
+Bors then adds the PR to the merge queue, runs a final CI build, and — if it passes — merges it into `master`. You do not merge your own PRs.
+
+</Steps>
+
+## Linter Options
+
+Mathlib enforces a standard set of linters via `lakeFile.lean`. The most important options are listed below.
+
+| Option | Effect |
+|---|---|
+| `linter.mathlibStandardSet` | Enables Mathlib's full default set of linters |
+| `linter.style.header` | Checks that every file has a valid copyright/author header |
+| `linter.style.longFile` | Warns when a file exceeds **1500 lines** |
+| `linter.checkInitImports` | Validates imports in `Mathlib.Init` files |
+| `linter.allScriptsDocumented` | Requires all scripts to have documentation |
+| `linter.pythonStyle` | Enforces Python-style indentation rules in scripts |
+| `autoImplicit` | Set to `false` — all variables must be declared explicitly |
+
+These options are applied via `mathlibLeanOptions` in `lakefile.lean` as weak options, meaning they apply to every `lake build` invocation across `Mathlib`, `Archive`, and `Counterexamples`.
+
+<Warning>
+Never set `autoImplicit := true` in a Mathlib file. The library-wide default is `false` and undeclared variables will cause a build error.
+</Warning>
+
+## The `autolabel` Tool
+
+Mathlib uses a GitHub label system to categorize PRs by mathematical topic (e.g., `t-algebra`, `t-topology`, `t-number-theory`). The `autolabel` executable infers the correct label from the files your PR modifies.
+
+To preview labels without applying them:
+
+```bash
+lake exe autolabel
+```
+
+To apply labels to a specific PR (requires the GitHub CLI `gh` to be installed):
+
+```bash
+lake exe autolabel <PR_number>
+```
+
+For example:
+
+```bash
+lake exe autolabel 150100
+```
+
+<Tip>
+If your PR touches files in multiple topic areas, `autolabel` will only apply a label when there is a unique best match. Add labels manually when the tool cannot determine a unique choice.
+</Tip>
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Style Guide" icon="paintbrush" href="./style-guide">
+    File headers, line length, Unicode, indentation, and proof formatting rules.
+  </Card>
+  <Card title="Naming Conventions" icon="tag" href="./naming-conventions">
+    How theorems, definitions, instances, and namespaces are named in Mathlib.
+  </Card>
+  <Card title="Building & Testing" icon="hammer" href="./building-testing">
+    Lake commands for building, testing, linting, and generating HTML docs.
+  </Card>
+</CardGroup>

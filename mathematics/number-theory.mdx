@@ -1,0 +1,263 @@
+---
+title: "Number Theory in Mathlib: Primes, Modular Arithmetic, and More"
+sidebarTitle: "Number Theory"
+description: "Explore Mathlib's number theory coverage: primes, modular arithmetic, p-adic numbers, quadratic reciprocity, algebraic number fields, and L-functions."
+---
+
+Number theory in Mathlib spans several directories — `Mathlib/NumberTheory/`, `Mathlib/Data/` (for `Nat` and `Int`), and `Mathlib/RingTheory/` (for algebraic structures) — and ranges from elementary results about divisibility and prime numbers through deep theorems of algebraic number theory such as the finiteness of the class group and the Dirichlet unit theorem. The library also covers p-adic analysis (`Mathlib/NumberTheory/Padics/`), L-functions, Dirichlet characters, the Riemann zeta function, and quadratic reciprocity. All results are machine-verified Lean 4 proofs.
+
+## Prime Numbers
+
+```lean
+-- Nat.Prime is the fundamental primality predicate
+#check Nat.Prime
+-- Nat.Prime p : p ≥ 2 ∧ ∀ m, m ∣ p → m = 1 ∨ m = p
+
+-- There are infinitely many primes
+#check Nat.exists_infinite_primes
+-- ∀ n : ℕ, ∃ p, n ≤ p ∧ Nat.Prime p
+
+-- Sum of two squares
+#check Nat.Prime.sq_add_sq
+-- p ≡ 1 [MOD 4] → ∃ a b, p = a^2 + b^2
+
+-- Sum of four squares (Lagrange)
+#check Nat.sum_four_squares
+-- ∀ n : ℕ, ∃ a b c d, n = a^2 + b^2 + c^2 + d^2
+
+-- Lucas-Lehmer primality test (for Mersenne primes)
+#check lucas_lehmer_sufficiency
+```
+
+<CardGroup cols={2}>
+  <Card title="Infinite Primes" icon="infinity">
+    ```lean
+    #check Nat.exists_infinite_primes
+    -- ∀ n, ∃ p ≥ n, Nat.Prime p
+    ```
+  </Card>
+  <Card title="Unique Factorization" icon="scissors">
+    Every natural number factors uniquely into primes (via the UFD instance on ℕ).
+
+    ```lean
+    #check Nat.factors        -- List of prime factors
+    #check Nat.factorization  -- Finsupp ℕ → ℕ of prime exponents
+    ```
+  </Card>
+</CardGroup>
+
+## Divisibility and GCD
+
+```lean
+-- Basic divisibility
+#check Nat.dvd      -- a ∣ b : ∃ k, b = a * k
+#check Int.dvd
+
+-- GCD and LCM for ℕ
+#check Nat.gcd       -- Nat.gcd a b : ℕ
+#check Nat.lcm
+#check Nat.Coprime   -- Nat.Coprime a b : Nat.gcd a b = 1
+
+-- Extended Euclidean algorithm
+#check Nat.xgcd      -- Returns (gcd, coefficients) for Bezout's identity
+
+-- Bezout's identity
+#check Nat.gcd_eq_gcd_ab
+-- Nat.gcd a b = a * Nat.gcdA a b + b * Nat.gcdB a b
+```
+
+## Modular Arithmetic
+
+### ZMod and ModEq
+
+```lean
+-- ZMod n is ℤ/nℤ
+#check ZMod    -- ZMod n : Type  (ZMod 0 = ℤ, ZMod n = ℤ/nℤ for n > 0)
+
+-- Congruences
+#check Nat.ModEq     -- a ≡ b [MOD n]  ↔  n ∣ (b - a)
+#check Int.ModEq
+
+-- ZMod n is a field when n is prime
+#check ZMod.instField   -- [Fact (Nat.Prime p)] → Field (ZMod p)
+```
+
+### Euler's Totient Function
+
+```lean
+-- Euler's totient
+#check Nat.totient
+-- Nat.totient n = #{k < n | Nat.Coprime k n}
+
+-- Euler's theorem: a^φ(n) ≡ 1 [MOD n] when gcd(a,n) = 1
+#check Nat.ModEq.pow_totient
+-- Nat.Coprime a n → a ^ n.totient ≡ 1 [MOD n]
+
+-- Fermat's little theorem (special case: n prime)
+#check ZMod.pow_card_sub_one_eq_one
+-- [Fact (Nat.Prime p)] → a ≠ 0 → a ^ (p-1) = 1 in ZMod p
+```
+
+## Quadratic Reciprocity
+
+The Legendre symbol and quadratic reciprocity are fully formalized:
+
+```lean
+-- Legendre symbol (a/p)
+#check legendreSym
+-- legendreSym p a : ℤ  (= 0, 1, or -1)
+
+-- The law of quadratic reciprocity
+#check legendreSym.quadratic_reciprocity
+-- (p / q) * (q / p) = (-1) ^ ((p-1)/2 * (q-1)/2)
+-- for odd primes p ≠ q
+```
+
+<Note>
+Mathlib's proof of quadratic reciprocity uses Gauss sums. The Legendre symbol is defined as a character `ZMod p →*₀ ℤ`, which allows algebraic manipulation inside the proof.
+</Note>
+
+## Arithmetic Functions
+
+```lean
+-- Abstract arithmetic functions
+#check ArithmeticFunction           -- Functions ℕ → R with Dirichlet convolution
+#check ArithmeticFunction.moebius   -- Möbius function μ
+#check ArithmeticFunction.sigma     -- Divisor sum σ_k
+#check ArithmeticFunction.omega     -- Number of distinct prime factors
+
+-- Bernoulli numbers
+#check bernoulli    -- Bernoulli numbers Bₙ : ℚ
+```
+
+## Pell's Equation and Diophantine Results
+
+```lean
+-- Solutions to the Pell equation x² - d*y² = 1
+#check Pell.pell        -- Existence of infinitely many solutions
+
+-- Matiyasevich's theorem (Hilbert's 10th problem, negative answer)
+#check Pell.matiyasevic
+-- Exponential growth is Diophantine
+
+-- Chevalley-Warning theorem
+#check char_dvd_card_solutions
+-- Over 𝔽_p, a system of polynomials with total degree < n in n variables
+-- has a number of solutions divisible by p
+```
+
+## p-adic Numbers
+
+```lean
+-- The p-adic numbers ℚ_p
+#check Padic     -- Padic p : Type  (completion of ℚ w.r.t. p-adic norm)
+
+-- The p-adic integers ℤ_p
+#check PadicInt  -- PadicInt p : Type  (= { x : Padic p | ‖x‖ ≤ 1 })
+
+-- Hensel's lemma for ℤ_p
+#check hensels_lemma
+-- A simple root mod p lifts to a root in ℤ_p
+```
+
+<CardGroup cols={2}>
+  <Card title="p-adic Norm" icon="ruler">
+    ```lean
+    #check padicNorm   -- The non-Archimedean p-adic norm |·|_p on ℚ
+    #check Padic.norm_p -- |p|_p = 1/p
+    ```
+  </Card>
+  <Card title="Witt Vectors" icon="vector-square">
+    The ring of Witt vectors generalizes p-adic integers to arbitrary rings.
+
+    ```lean
+    #check WittVector  -- 𝕎(R) : the ring of Witt vectors over R
+    #check Perfection  -- The perfection of a ring in char p
+    ```
+  </Card>
+</CardGroup>
+
+## Algebraic Number Theory
+
+### Number Fields
+
+```lean
+-- A number field is a finite extension of ℚ
+#check NumberField       -- Type class for number fields
+
+-- Ring of integers
+#check NumberField.RingOfIntegers
+-- The integral closure of ℤ in a number field K
+
+-- Class group (ideal class group)
+#check ClassGroup
+-- ClassGroup R = (fractional ideals) / (principal fractional ideals)
+```
+
+<CardGroup cols={2}>
+  <Card title="Finiteness of the Class Number" icon="hashtag">
+    The class group of the ring of integers of a number field is finite.
+
+    ```lean
+    #check NumberField.RingOfIntegers.instFintypeClassGroup
+    ```
+  </Card>
+  <Card title="Dirichlet Unit Theorem" icon="circle-nodes">
+    The unit group of the ring of integers has rank r₁ + r₂ - 1.
+
+    ```lean
+    #check NumberField.Units.exist_unique_eq_mul_prod
+    ```
+  </Card>
+</CardGroup>
+
+```lean
+-- Dirichlet class number formula
+#check NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT
+-- lim_{s→1} (s-1) ζ_K(s) = (2^r₁ * (2π)^r₂ * hR) / (w * √|disc K|)
+
+-- Dedekind zeta function
+#check NumberField.dedekindZeta   -- ζ_K(s) = ∑ |𝔞|^(-s) over ideals 𝔞
+```
+
+## L-functions and the Riemann Zeta Function
+
+```lean
+-- The Riemann zeta function
+#check riemannZeta      -- ζ(s) = ∑_{n=1}^∞ n^(-s)
+
+-- Dirichlet characters
+#check DirichletCharacter
+-- A completely multiplicative function ℤ/nℤ →* ℂ
+
+-- Dirichlet L-functions
+#check DirichletCharacter.LFunction
+-- L(χ, s) = ∑_{n=1}^∞ χ(n) * n^(-s)
+```
+
+## Transcendental Numbers
+
+```lean
+-- Liouville's construction of transcendental numbers
+#check transcendental_liouvilleNumber
+-- The Liouville constant ∑_{n=1}^∞ 10^{-n!} is transcendental
+```
+
+<Accordion title="Additional Number-Theoretic Results">
+
+```lean
+-- Euler product formula for ζ
+-- (stated via Dirichlet series machinery)
+
+-- Von Mangoldt function
+#check ArithmeticFunction.vonMangoldt
+
+-- Prime counting function
+#check Nat.primeCounting   -- π(n) = #{p ≤ n | Nat.Prime p}
+```
+
+</Accordion>
+
+<Tip>
+For a full list of number-theoretic results in Mathlib, browse `Mathlib.NumberTheory` in the [online docs](https://leanprover-community.github.io/mathlib4_docs/Mathlib/NumberTheory.html). The `Mathlib.NumberTheory.Primes` module collects the most commonly used primality lemmas.
+</Tip>

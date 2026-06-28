@@ -1,0 +1,564 @@
+---
+title: "Mathlib and Freek Wiedijk's 100 Theorems Benchmark"
+sidebarTitle: "100 Theorems"
+description: "Mathlib4's formalized entries from Freek Wiedijk's 100 Theorems benchmark, with Lean declaration names and contributing authors."
+---
+
+[Freek Wiedijk's "Formalizing 100 Theorems"](https://www.cs.ru.nl/~freek/100/) list is a long-standing benchmark for interactive theorem provers. It catalogs 100 significant mathematical results drawn from across pure mathematics — number theory, analysis, algebra, combinatorics, and geometry — and tracks which provers have successfully formalized each one. Mathlib has formalized a large share of these theorems, with declarations spread across its module hierarchy and tracked in the repository file `docs/100.yaml`. That file records the canonical Lean 4 declaration name, the contributing authors, and links to any external-repository proofs for theorems that live outside Mathlib proper.
+
+## About the Benchmark
+
+Wiedijk's list was designed to include theorems that are mathematically non-trivial, span many areas of mathematics, and were historically important — not merely technically hard to formalize. A theorem prover that covers the full list demonstrates breadth and robustness in its mathematical library. Mathlib aims for completeness and continuously adds new entries as contributors formalize remaining items.
+
+<Note>
+  Some of the 100 theorems have been formalized in external projects (separate GitHub repositories) rather than in Mathlib itself. The `docs/100.yaml` file links to those proofs where applicable. The `lake exe check-yaml` command verifies that all declaration names in the YAML file exist in the current build.
+</Note>
+
+## Formalized Theorems by Area
+
+The theorems below are drawn directly from `docs/100.yaml`. Each entry shows the theorem number, its title, the Lean 4 declaration name(s), and the primary author(s).
+
+### Number Theory and Arithmetic
+
+<Accordion title="Theorems 1, 10, 11, 19, 20, 48, 51, 80, 81, 98">
+
+**#1 — The Irrationality of the Square Root of 2**
+```lean
+irrational_sqrt_two
+```
+*Authors: mathlib*
+
+**#10 — Euler's Generalization of Fermat's Little Theorem**
+```lean
+Nat.ModEq.pow_totient
+```
+*Authors: Chris Hughes*
+
+**#11 — The Infinitude of Primes**
+```lean
+Nat.exists_infinite_primes
+```
+*Authors: Jeremy Avigad*
+
+**#19 — Four Squares Theorem**
+```lean
+Nat.sum_four_squares
+```
+*Authors: Chris Hughes*
+
+**#20 — All Primes (1 mod 4) Equal the Sum of Two Squares**
+```lean
+Nat.Prime.sq_add_sq
+```
+*Authors: Chris Hughes*
+
+**#48 — Dirichlet's Theorem on Primes in Arithmetic Progressions**
+```lean
+Nat.infinite_setOf_prime_and_eq_mod
+```
+*Authors: David Loeffler, Michael Stoll*
+
+**#51 — Wilson's Lemma**
+```lean
+ZMod.wilsons_lemma
+```
+*Authors: Chris Hughes*
+
+**#80 — The Fundamental Theorem of Arithmetic**
+```lean
+Nat.primeFactorsList_unique
+UniqueFactorizationMonoid
+UniqueFactorizationMonoid.factors_unique
+```
+*Authors: Chris Hughes* — also proved in generality: every Euclidean domain is a UFD, and `Int` is a Euclidean domain (`Int.euclideanDomain`).
+
+**#81 — Divergence of the Prime Reciprocal Series**
+```lean
+Theorems100.Real.tendsto_sum_one_div_prime_atTop
+not_summable_one_div_on_primes
+```
+*Authors: Manuel Candales (archive), Michael Stoll (mathlib)*
+
+**#98 — Bertrand's Postulate**
+```lean
+Nat.bertrand
+```
+*Authors: Bolton Bailey, Patrick Stevens*
+
+</Accordion>
+
+### Analysis and Calculus
+
+<Accordion title="Theorems 14, 15, 26, 34, 35, 38, 64, 75, 76, 79, 86, 90, 91">
+
+**#14 — Euler's Summation of 1 + (1/2)² + (1/3)² + …**
+```lean
+hasSum_zeta_two
+```
+*Authors: Marc Masdeu, David Loeffler*
+
+**#15 — Fundamental Theorem of Integral Calculus**
+```lean
+intervalIntegral.integral_hasStrictDerivAt_of_tendsto_ae_right
+intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le
+```
+*Authors: Yury G. Kudryashov (first form), Benjamin Davidson (second form)*
+
+**#26 — Leibniz's Series for Pi**
+```lean
+Real.tendsto_sum_pi_div_four
+```
+*Authors: Benjamin Davidson*
+
+**#34 — Divergence of the Harmonic Series**
+```lean
+Real.tendsto_sum_range_one_div_nat_succ_atTop
+```
+*Authors: Anatole Dedecker, Yury Kudryashov*
+
+**#35 — Taylor's Theorem**
+```lean
+taylor_mean_remainder_lagrange
+taylor_mean_remainder_cauchy
+map_add_eq_sum_add_integral_iteratedFDeriv
+```
+*Authors: Moritz Doll*
+
+**#38 — Arithmetic Mean / Geometric Mean Inequality**
+```lean
+Real.geom_mean_le_arith_mean_weighted
+```
+*Authors: Yury G. Kudryashov*
+
+**#64 — L'Hôpital's Rule**
+```lean
+deriv.lhopital_zero_nhds
+```
+*Authors: Anatole Dedecker*
+
+**#75 — The Mean Value Theorem**
+```lean
+exists_deriv_eq_slope
+```
+*Authors: Yury G. Kudryashov*
+
+**#76 — Fourier Series**
+```lean
+fourierCoeff
+hasSum_fourier_series_L2
+```
+*Authors: Heather Macbeth*
+
+**#79 — The Intermediate Value Theorem**
+```lean
+intermediate_value_Icc
+```
+*Authors: Rob Lewis, Chris Hughes*
+
+**#86 — Lebesgue Measure and Integration**
+```lean
+MeasureTheory.lintegral
+```
+*Authors: Johannes Hölzl*
+
+**#90 — Stirling's Formula**
+```lean
+Stirling.tendsto_stirlingSeq_sqrt_pi
+```
+*Authors: Moritz Firsching, Fabian Kruse, Nikolas Kuhn, Heather Macbeth*
+
+**#91 — The Triangle Inequality**
+```lean
+norm_add_le
+```
+*Authors: Zhouhang Zhou*
+
+</Accordion>
+
+### Algebra
+
+<Accordion title="Theorems 2, 7, 16, 17, 18, 37, 39, 44, 46, 49, 71, 72, 89">
+
+**#2 — Fundamental Theorem of Algebra**
+```lean
+Complex.exists_root
+```
+*Authors: Chris Hughes*
+
+**#7 — Law of Quadratic Reciprocity**
+```lean
+legendreSym.quadratic_reciprocity
+jacobiSym.quadratic_reciprocity
+```
+*Authors: Chris Hughes (Legendre symbol), Michael Stoll (Jacobi symbol)*
+
+**#16 — Insolvability of General Higher Degree Equations (Abel–Ruffini Theorem)**
+```lean
+AbelRuffini.exists_not_solvable_by_rad
+```
+*Authors: Thomas Browning*
+
+**#17 — De Moivre's Formula**
+```lean
+Complex.cos_add_sin_mul_I_pow
+```
+*Authors: Abhimanyu Pallavi Sudhir*
+
+**#18 — Liouville's Theorem and the Construction of Transcendental Numbers**
+```lean
+Liouville.transcendental
+```
+*Authors: Jujian Zhang*
+
+**#37 — The Solution of a Cubic**
+```lean
+Theorems100.cubic_eq_zero_iff
+```
+*Authors: Jeoff Lee*
+
+**#39 — Solutions to Pell's Equation**
+```lean
+Pell.eq_pell
+Pell.exists_of_not_isSquare
+```
+*Authors: Mario Carneiro (first), Michael Stoll (second)*
+
+**#44 — The Binomial Theorem**
+```lean
+add_pow
+```
+*Authors: Chris Hughes*
+
+**#46 — The Solution of the General Quartic Equation**
+```lean
+Theorems100.quartic_eq_zero_iff
+```
+*Authors: Thomas Zhu*
+
+**#49 — The Cayley–Hamilton Theorem**
+```lean
+Matrix.aeval_self_charpoly
+```
+*Authors: Kim Morrison*
+
+**#71 — Order of a Subgroup (Lagrange's Theorem)**
+```lean
+Subgroup.card_subgroup_dvd_card
+```
+*Authors: mathlib*
+
+**#72 — Sylow's Theorem**
+```lean
+Sylow.exists_subgroup_card_pow_prime
+Sylow.isPretransitive_of_finite
+Sylow.card_dvd_index
+card_sylow_modEq_one
+```
+*Authors: Chris Hughes*
+
+**#89 — The Factor and Remainder Theorems**
+```lean
+Polynomial.dvd_iff_isRoot
+Polynomial.mod_X_sub_C_eq_C_eval
+```
+*Authors: Chris Hughes*
+
+</Accordion>
+
+### Geometry
+
+<Accordion title="Theorems 4, 9, 27, 40, 55, 57, 61, 65, 94, 95">
+
+**#4 — Pythagorean Theorem**
+```lean
+EuclideanGeometry.dist_sq_eq_dist_sq_add_dist_sq_iff_angle_eq_pi_div_two
+```
+*Authors: Joseph Myers*
+
+**#9 — The Area of a Circle**
+```lean
+Theorems100.area_disc
+```
+*Authors: James Arthur, Benjamin Davidson, Andrew Souther*
+
+**#27 — Sum of the Angles of a Triangle**
+```lean
+EuclideanGeometry.angle_add_angle_add_angle_eq_pi
+```
+*Authors: Joseph Myers*
+
+**#40 — Minkowski's Fundamental Theorem**
+```lean
+MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
+```
+*Authors: Alex J. Best, Yaël Dillies*
+
+**#55 — Product of Segments of Chords**
+```lean
+EuclideanGeometry.mul_dist_eq_mul_dist_of_cospherical_of_angle_eq_pi
+```
+*Authors: Manuel Candales*
+
+**#57 — Heron's Formula**
+```lean
+Theorems100.heron
+```
+*Authors: Matt Kempster*
+
+**#61 — Theorem of Ceva**
+```lean
+Affine.Triangle.prod_dist_div_dist_eq_one_of_mem_line_of_mem_line
+```
+*Authors: Joseph Myers*
+
+**#65 — Isosceles Triangle Theorem**
+```lean
+EuclideanGeometry.angle_eq_angle_of_dist_eq
+```
+*Authors: Joseph Myers*
+
+**#94 — The Law of Cosines**
+```lean
+EuclideanGeometry.dist_sq_eq_dist_sq_add_dist_sq_sub_two_mul_dist_mul_dist_mul_cos_angle
+```
+*Authors: Joseph Myers*
+
+**#95 — Ptolemy's Theorem**
+```lean
+EuclideanGeometry.mul_dist_add_mul_dist_eq_mul_dist_of_cospherical
+```
+*Authors: Manuel Candales*
+
+</Accordion>
+
+### Combinatorics and Probability
+
+<Accordion title="Theorems 30, 47, 52, 58, 59, 62, 63, 73, 78, 83, 88, 93, 96">
+
+**#30 — The Ballot Problem**
+```lean
+Ballot.ballot_problem
+```
+*Authors: Bhavik Mehta, Kexing Ying*
+
+**#47 — The Central Limit Theorem**
+```lean
+ProbabilityTheory.tendstoInDistribution_inv_sqrt_mul_sum_sub
+```
+*Authors: Thomas Zhu, Rémy Degenne, Etienne Marion*
+
+**#52 — The Number of Subsets of a Set**
+```lean
+Finset.card_powerset
+```
+*Authors: mathlib*
+
+**#58 — Formula for the Number of Combinations**
+```lean
+Finset.card_powersetCard
+Finset.mem_powersetCard
+```
+*Authors: mathlib*
+
+**#59 — The Laws of Large Numbers**
+```lean
+ProbabilityTheory.strong_law_ae
+```
+*Authors: Sébastien Gouëzel*
+
+**#62 — Fair Games Theorem (Optional Stopping)**
+```lean
+MeasureTheory.submartingale_iff_expected_stoppedValue_mono
+```
+*Authors: Kexing Ying*
+
+**#63 — Cantor's Theorem**
+```lean
+Function.cantor_surjective
+```
+*Authors: Johannes Hölzl, Mario Carneiro*
+
+**#73 — Ascending or Descending Sequences (Erdős–Szekeres Theorem)**
+```lean
+Theorems100.erdos_szekeres
+```
+*Authors: Bhavik Mehta*
+
+**#78 — The Cauchy–Schwarz Inequality**
+```lean
+inner_mul_inner_self_le
+norm_inner_le_norm
+```
+*Authors: Zhouhang Zhou*
+
+**#83 — The Friendship Theorem**
+```lean
+Theorems100.friendship_theorem
+```
+*Authors: Aaron Anderson, Jalex Stark, Kyle Miller*
+
+**#88 — Derangements Formula**
+```lean
+card_derangements_eq_numDerangements
+numDerangements_sum
+```
+*Authors: Henry Swanson*
+
+**#93 — The Birthday Problem**
+```lean
+Theorems100.birthday
+Theorems100.birthday_measure
+```
+*Authors: Eric Rodriguez*
+
+**#96 — Principle of Inclusion/Exclusion**
+```lean
+Finset.inclusion_exclusion_sum_biUnion
+Finset.inclusion_exclusion_card_biUnion
+Finset.inclusion_exclusion_sum_inf_compl
+Finset.inclusion_exclusion_card_inf_compl
+```
+*Authors: Neil Strickland (outside mathlib), Yaël Dillies (in mathlib)*
+
+</Accordion>
+
+### Further Notable Entries
+
+<Accordion title="Theorems 3, 22, 23, 25, 42, 45, 54, 60, 66, 68, 69, 70, 74, 77, 82, 85, 97, 99, 100">
+
+**#3 — The Denumerability of the Rational Numbers**
+```lean
+Rat.instDenumerable
+```
+*Authors: Chris Hughes*
+
+**#22 — The Non-Denumerability of the Continuum**
+```lean
+Cardinal.not_countable_real
+```
+*Authors: Floris van Doorn*
+
+**#23 — Formula for Pythagorean Triples**
+```lean
+PythagoreanTriple.classification
+```
+*Authors: Paul van Wamelen*
+
+**#25 — Schroeder–Bernstein Theorem**
+```lean
+Function.Embedding.schroeder_bernstein
+```
+*Authors: Mario Carneiro*
+
+**#42 — Sum of the Reciprocals of the Triangular Numbers**
+```lean
+Theorems100.inverse_triangle_sum
+```
+*Authors: Jalex Stark, Yury Kudryashov*
+
+**#45 — The Partition Theorem**
+```lean
+Nat.Partition.card_odds_eq_card_distincts
+```
+*Authors: Bhavik Mehta, Aaron Anderson, Weiyi Wang*
+
+**#54 — Königsberg Bridges Problem**
+```lean
+Konigsberg.not_isEulerian
+```
+*Authors: Kyle Miller*
+
+**#60 — Bézout's Theorem**
+```lean
+Nat.gcd_eq_gcd_ab
+```
+*Authors: mathlib*
+
+**#66 — Sum of a Geometric Series**
+```lean
+geom_sum_Ico
+NNReal.hasSum_geometric
+```
+*Authors: Sander R. Dahmen (finite), Johannes Hölzl (infinite)*
+
+**#68 — Sum of an Arithmetic Series**
+```lean
+Finset.sum_range_id
+```
+*Authors: Johannes Hölzl*
+
+**#69 — Greatest Common Divisor Algorithm**
+```lean
+EuclideanDomain.gcd
+EuclideanDomain.gcd_dvd
+EuclideanDomain.dvd_gcd
+```
+*Authors: mathlib*
+
+**#70 — The Perfect Number Theorem**
+```lean
+Theorems100.Nat.eq_two_pow_mul_prime_mersenne_of_even_perfect
+```
+*Authors: Aaron Anderson*
+
+**#74 — The Principle of Mathematical Induction**
+```lean
+Nat
+```
+*Note: automatically generated when defining the natural numbers. Authors: Leonardo de Moura*
+
+**#77 — Sum of kth Powers**
+```lean
+sum_range_pow
+sum_Ico_pow
+```
+*Authors: Moritz Firsching, Fabian Kruse, Ashvni Narayanan*
+
+**#82 — Dissection of Cubes (Littlewood's elegant proof)**
+```lean
+Theorems100.«82».cannot_cube_a_cube
+```
+*Authors: Floris van Doorn*
+
+**#85 — Divisibility by 3 Rule**
+```lean
+Nat.three_dvd_iff
+```
+*Authors: Kim Morrison*
+
+**#97 — Cramer's Rule**
+```lean
+Matrix.mulVec_cramer
+```
+*Authors: Anne Baanen*
+
+**#99 — Buffon Needle Problem**
+```lean
+BuffonsNeedle.buffon_short
+BuffonsNeedle.buffon_long
+```
+*Authors: Enrico Z. Borba*
+
+**#100 — Descartes' Rule of Signs**
+```lean
+Polynomial.roots_countP_pos_le_signVariations
+```
+*Authors: Alex Meiburg*
+
+</Accordion>
+
+## Ongoing and External Proofs
+
+Several entries on the list have been formalized in dedicated external repositories rather than Mathlib proper. These include:
+
+- **#5 (Prime Number Theorem)** — Alex Kontorovich, Terry Tao, et al. in the [PrimeNumberTheoremAnd](https://github.com/AlexKontorovich/PrimeNumberTheoremAnd) project.
+- **#6 (Gödel's Incompleteness Theorem)** — Shogo Saito in [FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation).
+- **#24 (Independence of the Continuum Hypothesis)** — Jesse Michael Han and Floris van Doorn in the [flypitch](https://github.com/flypitch/flypitch) project.
+- **#31 (Ramsey's Theorem)** — Bhavik Mehta in a [separate combinatorics repository](https://github.com/b-mehta/combinatorics).
+- **#33 (Fermat's Last Theorem)** — ongoing formalization at [imperialcollegelondon.github.io/FLT](https://imperialcollegelondon.github.io/FLT/).
+- **#36 (Brouwer Fixed Point Theorem)** — Brendan Seamas Murphy in [Shamrock-Frost/BrouwerFixedPoint](https://github.com/Shamrock-Frost/BrouwerFixedPoint).
+- **#67 (e is Transcendental)** — Jujian Zhang in a [dedicated transcendental numbers repository](https://github.com/jjaassoonn/transcendental).
+
+<Tip>
+  The `docs/100.yaml` file is the authoritative source and is validated on every CI run with `lake exe check-yaml`, which confirms that every `decl` and `decls` entry resolves to a real declaration in the current build.
+</Tip>

@@ -1,0 +1,282 @@
+---
+title: "Topology in Mathlib: Spaces, Continuity, and Convergence"
+sidebarTitle: "Topology"
+description: "Explore Mathlib's formalization of topological spaces, metric spaces, continuity, compactness, connectedness, and convergence via filters."
+---
+
+Topology in Mathlib is built on a single unifying abstraction — the `Filter` — that gives a uniform treatment of limits, convergence, continuity, and compactness without privileging any particular notion of "closeness." The main topological development lives in `Mathlib/Topology/`, with metric-space specializations in `Mathlib/Topology/MetricSpace/` and uniform-space theory providing the bridge between purely topological and metric notions. Mathlib's topology library is tightly integrated with analysis: every result about continuous functions, compact spaces, and convergence is available in the same framework used by the calculus and measure theory libraries.
+
+## Filters: The Unifying Abstraction
+
+Before diving into topological spaces, it helps to understand Mathlib's filter-based approach to limits.
+
+```lean
+-- A filter on α is a collection of "large" sets, closed under supersets and finite intersections
+#check Filter         -- Type: Filter α
+#check Filter.Tendsto -- "f(x) → b as x → a" (generalized limit)
+-- Filter.Tendsto f la lb means the preimage of every set in lb is in la
+
+-- Neighborhood filter
+#check nhds           -- nhds x : Filter α  (neighborhood filter at x)
+
+-- Examples:
+-- Filter.atTop  : Filter ℕ  (sets containing all sufficiently large naturals)
+-- Filter.atBot  : Filter ℕ
+-- Filter.cofinite : Filter α  (sets with finite complement)
+```
+
+<Note>
+The `Filter.Tendsto f la lb` definition unifies dozens of classical limit notions: `lim_{x→a} f(x) = b`, `lim_{n→∞} aₙ = L`, uniform convergence, and more. Most of Mathlib's continuity and convergence results are stated in this language.
+</Note>
+
+## Topological Spaces
+
+```lean
+-- The TopologicalSpace type class
+#check TopologicalSpace   -- A type class providing the open-set structure on α
+
+-- Open and closed sets
+#check IsOpen    -- IsOpen s : s is an open set
+#check IsClosed  -- IsClosed s : s = (IsOpen sᶜ)
+
+-- Closure, interior, frontier
+#check closure   -- The topological closure of a set
+#check interior  -- The topological interior
+#check frontier  -- The topological boundary
+
+-- Induced and coinduced topologies
+#check TopologicalSpace.induced  -- Coarsest topology making f continuous
+```
+
+### Separation Axioms
+
+```lean
+#check T1Space    -- Points are closed
+#check T2Space    -- Hausdorff: distinct points have disjoint neighborhoods
+#check T3Space    -- Regular Hausdorff
+#check T4Space    -- Normal Hausdorff
+```
+
+### Classical Theorems
+
+```lean
+-- Urysohn's lemma: disjoint closed sets in a normal space can be separated
+#check exists_continuous_zero_one_of_isClosed
+
+-- Stone-Weierstrass theorem
+#check ContinuousMap.subalgebra_topologicalClosure_eq_top_of_separatesPoints
+
+-- Stone-Čech compactification
+#check StoneCech
+```
+
+## Continuity
+
+```lean
+-- Global continuity
+#check Continuous     -- f : α → β is continuous
+
+-- Pointwise continuity
+#check ContinuousAt   -- ContinuousAt f x : f is continuous at x
+
+-- Continuity on a set
+#check ContinuousOn   -- ContinuousOn f s : f is continuous on s
+
+-- Open and closed maps
+#check IsOpenMap    -- f maps open sets to open sets
+#check IsClosedMap  -- f maps closed sets to closed sets
+
+-- Dense inducing / embedding
+#check IsDenseInducing
+#check IsDenseInducing.extend   -- Extension by continuity to the closure
+```
+
+<CardGroup cols={2}>
+  <Card title="Intermediate Value Theorem" icon="arrows-left-right">
+    A continuous function on a connected set attains all intermediate values.
+
+    ```lean
+    #check intermediate_value_Icc
+    -- f continuous on [a, b], f a ≤ v ≤ f b →
+    --   ∃ c ∈ [a, b], f c = v
+    ```
+  </Card>
+  <Card title="Extreme Value Theorem" icon="arrow-up">
+    A continuous function on a compact set attains its maximum and minimum.
+
+    ```lean
+    #check IsCompact.exists_isMinOn
+    #check IsCompact.exists_isMaxOn
+    ```
+  </Card>
+</CardGroup>
+
+## Metric Spaces
+
+```lean
+-- Mathlib.Topology.MetricSpace.Basic
+#check MetricSpace        -- Type class: a space with a distance function
+#check PseudoMetricSpace  -- Allows dist x y = 0 without x = y
+#check EMetricSpace       -- Extended metric (distances in ℝ≥0∞)
+
+-- Open and closed balls
+#check Metric.ball        -- { y | dist y x < r }
+#check Metric.closedBall  -- { y | dist y x ≤ r }
+#check Metric.sphere      -- { y | dist y x = r }
+
+-- Lipschitz and Hölder continuity
+#check LipschitzWith   -- |f x - f y| ≤ K * |x - y|
+#check HolderWith      -- |f x - f y| ≤ C * |x - y|^r
+```
+
+<CardGroup cols={2}>
+  <Card title="Banach Fixed-Point Theorem" icon="crosshairs">
+    A contraction mapping on a complete metric space has a unique fixed point.
+
+    ```lean
+    #check ContractingWith.exists_fixedPoint
+    ```
+  </Card>
+  <Card title="Baire Category Theorem" icon="layer-group">
+    A complete metric space is not a countable union of nowhere-dense sets.
+
+    ```lean
+    #check dense_iInter_of_isOpen
+    ```
+  </Card>
+  <Card title="Arzelà-Ascoli Theorem" icon="arrows-to-dot">
+    Equicontinuous, pointwise-bounded families are relatively compact.
+
+    ```lean
+    #check BoundedContinuousFunction.arzela_ascoli
+    ```
+  </Card>
+  <Card title="Bolzano-Weierstrass" icon="magnifying-glass">
+    In a metric space, sequential compactness equals compactness.
+
+    ```lean
+    #check isCompact_iff_isSeqCompact
+    ```
+  </Card>
+</CardGroup>
+
+### Heine-Borel and Completeness
+
+```lean
+-- Heine-Borel theorem (proper metric space version)
+#check Metric.isCompact_iff_isClosed_bounded
+-- In ℝⁿ: compact ↔ closed and bounded
+
+-- Hausdorff distance between sets
+#check Metric.hausdorffEDist
+
+-- Gromov-Hausdorff space of compact metric spaces
+#check GromovHausdorff.GHSpace
+```
+
+## Compactness
+
+```lean
+-- Compactness via filters (Bourbaki-style)
+#check IsCompact           -- Every ultrafilter converges (filter definition)
+#check CompactSpace        -- The whole space is compact
+
+-- Equivalence with open-cover compactness
+#check isCompact_iff_finite_subcover
+-- K compact ↔ every open cover has a finite subcover
+
+-- Key results
+#check IsCompact.inter_isClosed  -- Compact ∩ closed = compact
+#check IsCompact.image           -- Continuous image of compact is compact
+```
+
+### Heine-Cantor Theorem
+
+A continuous function on a compact space is uniformly continuous:
+
+```lean
+#check CompactSpace.uniformContinuous_of_continuous
+-- [CompactSpace α] → Continuous f → UniformContinuous f
+```
+
+## Connectedness
+
+```lean
+#check IsConnected      -- s is connected (not a disjoint union of two opens)
+#check ConnectedSpace   -- The whole space is connected
+#check IsPathConnected  -- s is path-connected
+#check TotallyDisconnected  -- No nondegenerate connected subsets
+
+-- Components
+#check connectedComponent         -- The connected component of a point
+#check connectedComponentIn       -- Connected component in a subspace
+```
+
+## Uniform Spaces
+
+Uniform spaces abstract the "close together" relation that is common to metric spaces, topological groups, and completions.
+
+```lean
+#check UniformSpace         -- Type class providing uniformity on α
+#check UniformContinuous    -- Uniformly continuous function
+#check TendstoUniformly     -- Uniform convergence of a sequence of functions
+#check Cauchy               -- Cauchy filter
+#check CauchySeq            -- Cauchy sequence
+#check CompleteSpace        -- Every Cauchy filter converges
+
+-- Completion
+#check UniformSpace.Completion
+-- The Hausdorff completion of a uniform space
+```
+
+## Topological Algebra
+
+When algebraic structures carry a compatible topology, Mathlib provides a unified framework:
+
+```lean
+-- Topological groups and rings
+#check IsTopologicalGroup   -- Multiplication and inversion are continuous
+#check IsTopologicalRing    -- Addition and multiplication are continuous
+
+-- Completions of algebraic structures
+#check UniformSpace.Completion.instAddCommGroup  -- Completion of an abelian group
+#check UniformSpace.Completion.ring              -- Completion of a ring
+
+-- Continuous linear maps
+#check ContinuousLinearMap   -- Bounded operators between topological vector spaces
+#check ContinuousSMul        -- Continuous scalar multiplication
+
+-- Infinite sums
+#check HasSum    -- ∑ i, f i = a (convergent sum)
+#check Summable  -- ∑ i, f i converges
+```
+
+<CardGroup cols={2}>
+  <Card title="Compact-Open Topology" icon="window-maximize">
+    ```lean
+    #check ContinuousMap.compactOpen
+    -- The topology on C(X, Y) of uniform convergence on compacta
+    ```
+  </Card>
+  <Card title="Order Topology" icon="arrow-up-wide-short">
+    ```lean
+    #check OrderTopology
+    -- Generated by open intervals on a linear order
+    ```
+  </Card>
+</CardGroup>
+
+## Fiber Bundles and Vector Bundles
+
+```lean
+-- Topological fiber bundle
+#check FiberBundle
+#check VectorBundle     -- Fiber bundle with vector space fibers
+
+-- Key example: tangent bundle (lives in Geometry/Manifold)
+#check TangentBundle
+```
+
+<Tip>
+Mathlib's topology library is extensively documented with module-level comments. The key entry points are `Mathlib.Topology.Basic` for the foundational definitions and `Mathlib.Topology.MetricSpace.Basic` for the metric-space specialization.
+</Tip>

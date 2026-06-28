@@ -1,0 +1,173 @@
+---
+title: "Mathlib4 Dependencies: Batteries, Aesop, and More"
+sidebarTitle: "Dependencies"
+description: "Mathlib4's upstream Lake dependencies — batteries, Qq, aesop, proofwidgets, importGraph, LeanSearchClient, and plausible — with descriptions of each."
+---
+
+Mathlib4 is built on top of several upstream Lean 4 packages that provide foundational infrastructure, proof automation, and developer tooling. These dependencies are declared in `lakefile.lean` using `require` directives and are pinned to exact git commit SHAs in `lake-manifest.json` to ensure fully reproducible builds. Understanding what each dependency provides helps you decide which ones your own downstream project actually needs and whether pulling in all of Mathlib is the right choice for your use case.
+
+## Dependency Declarations
+
+The following seven packages are declared as direct dependencies in `lakefile.lean`:
+
+```lean
+require "leanprover-community" / "batteries"        @ git "main"
+require "leanprover-community" / "Qq"               @ git "master"
+require "leanprover-community" / "aesop"            @ git "master"
+require "leanprover-community" / "proofwidgets"     @ git "main"
+require "leanprover-community" / "importGraph"      @ git "main"
+require "leanprover-community" / "LeanSearchClient" @ git "main"
+require "leanprover-community" / "plausible"        @ git "main"
+```
+
+Each `@ git "<branch>"` reference is resolved to a concrete commit SHA that is recorded in `lake-manifest.json`. The file is committed to the Mathlib repository so that `lake update` reproduces the exact dependency state that was tested in CI.
+
+## Package Reference
+
+<CardGroup cols={1}>
+  <Card title="batteries" icon="battery-full">
+    **Repository:** [leanprover-community/batteries](https://github.com/leanprover-community/batteries)
+
+    **Pinned commit:** `09c267c2706119a09606e6cde3f6cef5bb2ab72a`
+
+    Batteries is the standard supplement to Lean 4 core, containing data structures, algorithms, and tactics that are broadly useful but have not yet been merged into the Lean 4 release itself. It provides extended APIs for `List`, `Array`, `HashMap`, `RBTree`, and related types, as well as foundational tactics like `omega` (linear arithmetic over integers and naturals) and `simp` lemmas for the standard library types. Mathlib relies heavily on Batteries for these primitives and treats it as the first layer of the dependency stack.
+  </Card>
+
+  <Card title="Qq" icon="magnifying-glass-plus">
+    **Repository:** [leanprover-community/quote4](https://github.com/leanprover-community/quote4)
+
+    **Pinned commit:** `7a62bd13860cd39ac98da16ffc8c24d601353f69`
+
+    `Qq` (pronounced "quote-quote") provides a typed quotation framework for Lean 4 metaprogramming. It exposes the `Q(·)` notation for constructing and pattern-matching on `Expr` values with type-level guarantees, dramatically reducing the risk of type errors in tactic and elaboration code. Mathlib uses `Qq` extensively in the implementations of tactics such as `norm_num`, `positivity`, and `ring` where the tactic code must reflect and construct typed expressions in the kernel's term language.
+  </Card>
+
+  <Card title="aesop" icon="robot">
+    **Repository:** [leanprover-community/aesop](https://github.com/leanprover-community/aesop)
+
+    **Pinned commit:** `b5b9e2bb45ce91e4bc44eaa738c3a8910404ab82`
+
+    `aesop` (Automated Extensible Search for Obvious Proofs) is a general-purpose proof-search tactic for Lean 4. It runs a configurable set of rules — lemmas tagged `@[aesop]`, simp lemmas, and user-supplied rules — in a best-first search to close goals automatically. Throughout Mathlib, `aesop` closes routine side conditions, membership goals in finsets, and structural goals in category theory. Library authors annotate their lemmas with `@[aesop safe]` or `@[aesop unsafe]` to control how aggressively `aesop` applies them.
+  </Card>
+
+  <Card title="proofwidgets" icon="display">
+    **Repository:** [leanprover-community/ProofWidgets4](https://github.com/leanprover-community/ProofWidgets4)
+
+    **Pinned commit:** `e6518a674e62de322b8f79eebeda7bcae2a36bc3`
+
+    ProofWidgets provides the infrastructure for custom interactive visualizations inside the Lean 4 VS Code extension's infoview. It allows tactic and elaboration code to render rich HTML/React components alongside the proof state. Mathlib uses ProofWidgets to display commutative diagrams, graph visualizations (via the `Mathlib.Tactic.Widget.CommDiag` and related modules), and goal-state summaries. The dependency is declared with a special `errorOnBuild` flag so that a build failure in the widget JavaScript code produces a clear, actionable error message rather than a silent fallback.
+  </Card>
+
+  <Card title="importGraph" icon="diagram-project">
+    **Repository:** [leanprover-community/import-graph](https://github.com/leanprover-community/import-graph)
+
+    **Pinned commit:** `41f407a8e85b0fdc00910633a8f14754139b63f4`
+
+    `importGraph` provides tools for analyzing and visualizing Mathlib's module dependency graph. It powers the `#check_imports` and related commands that help library maintainers detect unused imports, circular dependencies, and import paths that are longer than necessary. The CI `lake exe shake` invocation uses `importGraph` to check that every file's imports are minimal. Downstream projects may use the same tools to audit their own import graphs.
+  </Card>
+
+  <Card title="LeanSearchClient" icon="magnifying-glass">
+    **Repository:** [leanprover-community/LeanSearchClient](https://github.com/leanprover-community/LeanSearchClient)
+
+    **Pinned commit:** `c5d5b8fe6e5158def25cd28eb94e4141ad97c843`
+
+    `LeanSearchClient` integrates Lean 4 with external semantic search services — most notably [Moogle](https://www.moogle.ai/) and [Loogle](https://loogle.lean-lang.org/) — directly from within a proof. It provides the `#moogle "..."` and `#loogle "..."` commands for searching the Mathlib API by natural language description or type signature pattern without leaving the editor. This dependency is not required for compiling Mathlib theorems; it is primarily a developer-experience tool.
+  </Card>
+
+  <Card title="plausible" icon="flask-vial">
+    **Repository:** [leanprover-community/plausible](https://github.com/leanprover-community/plausible)
+
+    **Pinned commit:** `f3c7bd5061bd81b4480295c524d4f245c8b7e4e2`
+
+    `plausible` is a property-based testing framework for Lean 4, inspired by Haskell's QuickCheck and Scala's ScalaCheck. It provides the `#check` and `plausible` tactics, which automatically generate random counterexamples to conjectured statements before you attempt a formal proof. Mathlib uses `plausible` in development workflows to quickly falsify incorrect generalizations and to sanity-check new lemma statements. Like `LeanSearchClient`, it has no effect on compiled theorem files.
+  </Card>
+</CardGroup>
+
+## Pinned Commits and Reproducibility
+
+The `lake-manifest.json` file records the exact git commit SHA for every dependency, including transitive ones. This ensures that any machine running `lake build` against the same `lake-manifest.json` will compile exactly the same code.
+
+```json
+{
+  "version": "1.2.0",
+  "packagesDir": ".lake/packages",
+  "packages": [
+    {
+      "url": "https://github.com/leanprover-community/batteries",
+      "type": "git",
+      "rev": "09c267c2706119a09606e6cde3f6cef5bb2ab72a",
+      "name": "batteries",
+      "inputRev": "main",
+      "inherited": false
+    },
+    {
+      "url": "https://github.com/leanprover-community/aesop",
+      "type": "git",
+      "rev": "b5b9e2bb45ce91e4bc44eaa738c3a8910404ab82",
+      "name": "aesop",
+      "inputRev": "master",
+      "inherited": false
+    }
+  ],
+  "name": "mathlib",
+  "fixedToolchain": true
+}
+```
+
+<Note>
+  The `"fixedToolchain": true` field in `lake-manifest.json` mirrors the `fixedToolchain := true` setting in `lakefile.lean`. It tells Lake that this package only supports the exact Lean version recorded in `lean-toolchain`, and that Lake should refuse to build with any other toolchain version. See the [Toolchain page](./toolchain) for more on this setting.
+</Note>
+
+## Using Mathlib as a Dependency
+
+When you add Mathlib to your own project, all seven packages above are pulled in automatically because they are non-inherited (direct) dependencies of Mathlib.
+
+<Steps>
+  <Step title="Declare the dependency in lakefile.toml or lakefile.lean">
+    ```toml
+    # lakefile.toml
+    [[require]]
+    name = "mathlib"
+    scope = "leanprover-community"
+    rev = "main"
+    ```
+
+    Or in Lean syntax:
+    ```lean
+    -- lakefile.lean
+    require "leanprover-community" / "mathlib" @ git "main"
+    ```
+  </Step>
+  <Step title="Run lake update to fetch and pin dependencies">
+    ```bash
+    lake update
+    ```
+    This writes a `lake-manifest.json` for your project, pinning the exact Mathlib commit and all its transitive dependencies.
+  </Step>
+  <Step title="Fetch precompiled oleans from the cache server">
+    ```bash
+    lake exe cache get
+    ```
+    This downloads prebuilt `.olean` files from Mathlib's CI cache, saving you from compiling all of Mathlib locally. The `post_update` hook in Mathlib's `lakefile.lean` runs this automatically when your toolchain version matches Mathlib's pinned toolchain.
+  </Step>
+  <Step title="Import what you need">
+    ```lean
+    import Mathlib.Algebra.Group.Defs
+    import Mathlib.Tactic
+    ```
+    You do not need to import `Mathlib` (the full library root) unless you genuinely need all 8,000+ modules.
+  </Step>
+</Steps>
+
+## The MATHLIB_NO_CACHE_ON_UPDATE Environment Variable
+
+The `post_update` hook in Mathlib's `lakefile.lean` automatically runs `lake exe cache get` after `lake update` succeeds — but only when the toolchain version of the running `lake` matches the version in `lean-toolchain`. You can suppress this automatic cache fetch by setting the environment variable before running `lake update`:
+
+```bash
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+```
+
+This is useful in CI pipelines where you want to control exactly when and how the cache is populated, or when you are switching toolchains and want to fetch the cache manually after confirming the new version is correct.
+
+<Warning>
+  If you update your project's dependencies and the toolchain version changes, `lake exe cache get` must be run manually after `elan` has switched to the new Lean version. The `post_update` hook will print an informative message if it detects a version mismatch rather than failing silently.
+</Warning>

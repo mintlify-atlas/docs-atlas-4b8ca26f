@@ -1,47 +1,246 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Quickstart: Your First Lean 4 Proof with Mathlib"
+sidebarTitle: "Quickstart"
+description: "Write and run your first Lean 4 proof using Mathlib in minutes. Covers ring, linarith, and norm_num with real working examples."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+This guide takes you from a blank file to a working collection of Lean 4 proofs using Mathlib. It assumes you have Lean 4 installed and a project with Mathlib as a dependency. If you have not done that yet, follow the [Installation](./installation) and [Using Mathlib as a Dependency](./using-as-dependency) guides first. Once your project is set up and `lake exe cache get` has finished, you are ready to go — no further compilation is needed to run the examples below.
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+## Your First Proof File
 
-## Prerequisites
+Inside your Lake project, create a new file called `Proofs.lean` at the root of the project (next to `lakefile.lean`). Every Lean file that uses Mathlib starts with an import:
 
-Before you begin, you must have:
+```lean Proofs.lean
+import Mathlib
+```
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+This single line makes every definition, theorem, and tactic in Mathlib available. For exploratory files this is always the right choice.
 
-## Get started
+## Exploring the Library with `#check`
+
+Before writing proofs, it helps to know how to look things up. The `#check` command prints the type of any expression. Open `Proofs.lean` in VS Code, add the lines below, and hover over each `#check` to see the result in the Lean Infoview panel on the right:
+
+```lean Proofs.lean
+import Mathlib
+
+-- Lean prints the type (statement) of this theorem
+#check Nat.exists_infinite_primes
+-- Nat.exists_infinite_primes : ∀ (n : ℕ), ∃ p, n ≤ p ∧ Nat.Prime p
+
+#check Nat.add_comm
+-- Nat.add_comm : ∀ (n m : ℕ), n + m = m + n
+
+#check Real.sqrt_two_mul_self
+-- Real.sqrt_two_mul_self : √2 * √2 = 2
+```
+
+<Tip>
+  In VS Code, placing your cursor on any identifier and pressing `F12` jumps to the definition inside Mathlib. Use the [Mathlib4 API docs](https://leanprover-community.github.io/mathlib4_docs/) search bar to discover theorems by keyword.
+</Tip>
+
+## Example 1: Algebraic Identities with `ring`
+
+The `ring` tactic proves equalities that hold in any commutative (semi)ring by normalising both sides. It handles polynomial identities over any ring type automatically — you never need to cite individual lemmas.
+
+```lean Proofs.lean
+import Mathlib
+
+-- Binomial expansion over the integers
+example (a b : ℤ) : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2 := by
+  ring
+
+-- Difference of squares
+example (a b : ℤ) : (a + b) * (a - b) = a ^ 2 - b ^ 2 := by
+  ring
+
+-- Works over any CommRing, not just ℤ
+example {R : Type*} [CommRing R] (x y z : R) :
+    (x + y + z) ^ 2 = x ^ 2 + y ^ 2 + z ^ 2 + 2 * x * y + 2 * y * z + 2 * x * z := by
+  ring
+```
+
+<Info>
+  `ring` works over any type that carries a `CommSemiring`, `CommRing`, or compatible algebraic structure. It does **not** work for goals involving division or general field operations — use `field_simp` followed by `ring` in those cases.
+</Info>
+
+## Example 2: Linear Arithmetic with `linarith`
+
+The `linarith` tactic discharges linear arithmetic goals over ordered fields and rings. It can combine hypotheses using linear combinations to close inequalities and contradictions.
+
+```lean Proofs.lean
+import Mathlib
+
+-- A basic inequality: if y > x > 0 then y > 0
+example (x y : ℝ) (h1 : x > 0) (h2 : y > x) : y > 0 := by
+  linarith
+
+-- Combining multiple hypotheses
+example (a b c : ℝ) (h1 : a ≤ b) (h2 : b ≤ c) (h3 : c ≤ a + 1) : b ≤ a + 1 := by
+  linarith
+
+-- Deriving a contradiction from inconsistent hypotheses
+example (x : ℝ) (h1 : x > 5) (h2 : x < 3) : False := by
+  linarith
+```
+
+<Tip>
+  `linarith` only handles **linear** arithmetic. For nonlinear goals (e.g., `x^2 ≥ 0`), try `nlinarith`, `positivity`, or `polyrith`.
+</Tip>
+
+## Example 3: Numeric Calculations with `norm_num`
+
+The `norm_num` tactic evaluates numeric expressions and decides numeric propositions. It can verify primality, divisibility, inequalities between numeric literals, and much more — all by computation.
+
+```lean Proofs.lean
+import Mathlib
+
+-- Verify that 127 is prime
+example : Nat.Prime 127 := by norm_num
+
+-- A numeric inequality
+example : (2 : ℝ) ^ 10 > 1000 := by norm_num
+
+-- Divisibility
+example : (12 : ℤ) ∣ 144 := by norm_num
+
+-- Not prime
+example : ¬ Nat.Prime 1 := by norm_num
+```
+
+## Example 4: Using an Existing Mathlib Theorem
+
+Mathlib contains hundreds of thousands of named theorems. Once you find one with `#check`, you can apply it directly in a proof using `exact` or `apply`.
+
+```lean Proofs.lean
+import Mathlib
+
+-- Mathlib already proves there are infinitely many primes.
+-- We can simply reference the theorem.
+#check Nat.exists_infinite_primes
+-- Nat.exists_infinite_primes : ∀ (n : ℕ), ∃ p, n ≤ p ∧ Nat.Prime p
+
+-- Use it to show there exists a prime larger than 100
+example : ∃ p, 100 ≤ p ∧ Nat.Prime p := by
+  exact Nat.exists_infinite_primes 100
+
+-- Apply it as a step in a larger proof
+example (n : ℕ) : ∃ p, n < p ∧ Nat.Prime p := by
+  obtain ⟨p, hn, hp⟩ := Nat.exists_infinite_primes (n + 1)
+  exact ⟨p, by linarith, hp⟩
+```
+
+## Example 5: Combining Tactics
+
+Real proofs often chain several tactics together. The `by` block is a sequenced tactic proof; each tactic transforms the current proof goal until it is closed.
+
+```lean Proofs.lean
+import Mathlib
+
+-- Prove that √2 is irrational using Mathlib's existing theorem
+#check Nat.Prime.irrational_sqrt
+-- Nat.Prime.irrational_sqrt : Nat.Prime p → Irrational (√↑p)
+
+example : Irrational (Real.sqrt 2) := by
+  have h : Nat.Prime 2 := by norm_num
+  exact_mod_cast h.irrational_sqrt
+
+-- A structured proof using `have` for intermediate steps
+example (n : ℕ) (h : n > 0) : n * n > 0 := by
+  have hn : n ≠ 0 := Nat.not_eq_zero_of_lt h
+  exact Nat.mul_pos h h
+```
+
+## Running Your File
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
-
-    ```bash
-    npm install your-package
-    ```
+  <Step title="Check in VS Code (recommended)">
+    With the Lean 4 VS Code extension installed, simply open `Proofs.lean`. Lean checks the file incrementally as you type. The **Lean Infoview** panel (open with `Ctrl+Shift+P` → *Lean 4: Show Infoview*) displays the proof state at your cursor position, showing remaining goals and any error messages.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+
+  <Step title="Check from the command line">
+    To check a single file without the editor:
 
     ```bash
-    your-cli init
+    lean Proofs.lean
     ```
+
+    Lean prints any errors or warnings and exits. No output means all proofs are accepted.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Build the whole project">
+    To compile every file in your Lake project:
 
     ```bash
-    your-cli start
+    lake build
     ```
+
+    Lake parallelises the build across your CPU cores. Because the Mathlib `.olean` cache is already present, only your own files need to be compiled.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Putting It All Together
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+Here is a complete, self-contained file you can drop into any Mathlib project and run immediately:
+
+```lean Proofs.lean
+import Mathlib
+
+/-!
+# My First Mathlib Proofs
+
+A small collection of proofs using Mathlib's core tactics.
+-/
+
+-- 1. Algebraic identity (ring)
+example (a b : ℤ) : (a + b) ^ 2 = a ^ 2 + 2 * a * b + b ^ 2 := by ring
+
+-- 2. Linear arithmetic (linarith)
+example (x y : ℝ) (h1 : x > 0) (h2 : y > x) : y > 0 := by linarith
+
+-- 3. Numeric primality check (norm_num)
+example : Nat.Prime 127 := by norm_num
+
+-- 4. Infinitely many primes (exact application of a Mathlib theorem)
+example : ∃ p, 100 ≤ p ∧ Nat.Prime p :=
+  Nat.exists_infinite_primes 100
+
+-- 5. A custom lemma with a structured tactic proof
+lemma add_sq_nonneg (a b : ℝ) : (a - b) ^ 2 ≥ 0 := by positivity
+```
+
+<Info>
+  The `/-! ... -/` block at the top is a **module docstring** — Mathlib style encourages documenting every file this way. The text inside is rendered in the generated API docs.
+</Info>
+
+## Key Tactics Reference
+
+| Tactic | What it closes |
+|---|---|
+| `ring` | Polynomial identities in commutative (semi)rings |
+| `linarith` | Linear arithmetic inequalities over ordered types |
+| `nlinarith` | Nonlinear arithmetic inequalities |
+| `norm_num` | Numeric computations, primality, divisibility |
+| `decide` | Decidable propositions on finite/computable types |
+| `simp` | Simplification using a set of rewrite rules |
+| `aesop` | Automated proof search for structured goals |
+| `omega` | Linear arithmetic over `ℕ` and `ℤ` specifically |
+| `positivity` | Proves expressions are non-negative or positive |
+| `exact` | Closes the goal with a provided term |
+| `apply` | Applies a theorem, generating sub-goals for its hypotheses |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Mathlib Tactics Overview" icon="wand-magic-sparkles" href="https://leanprover-community.github.io/mathlib4_docs/Mathlib/Tactic.html">
+    Full reference for all tactics available in Mathlib.
+  </Card>
+  <Card title="Mathematics in Lean" icon="book-open" href="https://leanprover-community.github.io/mathematics_in_lean/">
+    The community's interactive textbook — the best structured introduction to proving mathematics in Lean.
+  </Card>
+  <Card title="Mathlib4 API Docs" icon="code" href="https://leanprover-community.github.io/mathlib4_docs/">
+    Search for any theorem, definition, or tactic in Mathlib by name or type signature.
+  </Card>
+  <Card title="Lean Zulip Chat" icon="comments" href="https://leanprover.zulipchat.com/">
+    Ask questions, share proofs, and discuss Mathlib with the community.
+  </Card>
+</CardGroup>

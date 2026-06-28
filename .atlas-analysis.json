@@ -1,0 +1,112 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Mathlib4",
+  "projectDescription": "Mathlib is the comprehensive mathematical library for the Lean 4 theorem prover, covering algebra, analysis, topology, number theory, category theory, and hundreds of other mathematical domains, along with a rich collection of proof tactics.",
+  "theme": "maple",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "using-as-dependency",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Mathematics",
+            "pages": [
+              "mathematics/overview",
+              "mathematics/algebra",
+              "mathematics/analysis",
+              "mathematics/topology",
+              "mathematics/number-theory",
+              "mathematics/category-theory",
+              "mathematics/other-areas"
+            ]
+          },
+          {
+            "group": "Tactics",
+            "pages": [
+              "tactics/overview",
+              "tactics/arithmetic",
+              "tactics/simplification",
+              "tactics/automation",
+              "tactics/structural"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "contributing/guidelines",
+              "contributing/style-guide",
+              "contributing/naming-conventions",
+              "contributing/building-testing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Library Reference",
+            "pages": [
+              "reference/modules",
+              "reference/100-theorems",
+              "reference/dependencies",
+              "reference/toolchain"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "8000+ Lean 4 modules spanning all major mathematical domains",
+    "Rich tactic library including `linarith`, `ring`, `norm_num`, `simp`, `omega`, `positivity`, `abel`, `field_simp`, and more",
+    "Formalizations of 100+ Freek Wiedijk theorems",
+    "Algebraic structures: groups, rings, fields, modules, algebras, and their morphisms",
+    "Analysis: metric spaces, topological spaces, calculus, measure theory, Fourier analysis",
+    "Number theory: primes, modular arithmetic, p-adic numbers, algebraic number theory",
+    "Category theory: functors, natural transformations, adjunctions, limits, sheaves",
+    "Precompiled `.olean` cache via `lake exe cache get` for fast builds",
+    "Automated CI, linters, and style enforcement",
+    "Active community on Zulip with extensive maintainer network"
+  ],
+  "publicApiSurface": [
+    "Mathlib.Tactic.Abel — abel tactic for additive commutative monoids/groups",
+    "Mathlib.Tactic.Linarith — linarith tactic for linear arithmetic over ordered fields",
+    "Mathlib.Tactic.Ring — ring/ring_nf tactics for commutative (semi)rings",
+    "Mathlib.Tactic.NormNum — norm_num tactic for numeric normalization",
+    "Mathlib.Tactic.Positivity — positivity tactic for non-negativity/positivity goals",
+    "Mathlib.Tactic.FieldSimp — field_simp tactic for simplifying field expressions",
+    "Mathlib.Tactic.GCongr — gcongr tactic for congruence lemmas",
+    "Mathlib.Tactic.Continuity — continuity tactic for continuity goals",
+    "Mathlib.Tactic.FunProp — fun_prop tactic for function properties",
+    "Mathlib.Tactic.TFAE — tfae_have/tfae_finish for equivalence chains",
+    "Mathlib.Tactic.Finset — finset tactics",
+    "Mathlib.Tactic.Ext — ext tactic for extensionality",
+    "Mathlib.Tactic.Use — use tactic for existentials",
+    "Mathlib.Tactic.WLOG — wlog tactic for without-loss-of-generality arguments",
+    "Mathlib.Algebra.Group — group and monoid structures",
+    "Mathlib.Algebra.Ring — ring structures and homomorphisms",
+    "Mathlib.Analysis.Calculus — differential calculus (derivatives, Taylor series)",
+    "Mathlib.MeasureTheory — measure theory and Lebesgue integration",
+    "Mathlib.Topology — topological spaces, continuity, compactness",
+    "Mathlib.NumberTheory — primes, Diophantine equations, zeta functions",
+    "Mathlib.CategoryTheory — categories, functors, natural transformations",
+    "Mathlib.LinearAlgebra — linear maps, matrices, bases",
+    "Mathlib.FieldTheory — Galois theory, field extensions",
+    "Mathlib.AlgebraicGeometry — schemes, sheaves, algebraic varieties",
+    "lake exe cache — fetch precompiled .olean files",
+    "lake exe mk_all — regenerate the top-level import file"
+  ]
+}

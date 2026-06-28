@@ -1,0 +1,306 @@
+---
+title: "Mathlib Style Guide: Formatting and Code Conventions"
+sidebarTitle: "Style Guide"
+description: "Mathlib's code style rules: file headers, line length, Unicode symbols, indentation, docstrings, simp lemma tagging, and proof formatting conventions."
+---
+
+Consistent style across Mathlib's hundreds of thousands of lines of code is essential for readability, searchability, and long-term maintainability. Mathlib enforces its style conventions through a combination of automated linters and human review. This page documents every rule a contributor needs to follow before a PR can be merged.
+
+## File Structure Overview
+
+Every Mathlib `.lean` file must follow a strict top-to-bottom structure:
+
+1. **Copyright header** — machine-readable license block
+2. **Import statements** — one per line, in alphabetical order within each group
+3. **Module docstring** — a `/-! ... -/` block describing the file's mathematical content
+4. **Top-level declarations** — definitions, lemmas, and theorems
+
+## File Header
+
+Every Mathlib file must begin with a copyright and license block in this exact format:
+
+```lean
+/-
+Copyright (c) 2024 Author Name. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Author Name
+-/
+```
+
+- The year should be the year of the initial commit.
+- Multiple authors are listed comma-separated on the `Authors:` line.
+- The header is enforced by the `linter.style.header` linter, which is always enabled — even in files imported before `Mathlib.Init`.
+
+<Warning>
+The header linter is enabled unconditionally via `linter.style.header` in `lakefile.lean`. A missing or malformed header will fail CI regardless of which file is being edited.
+</Warning>
+
+## Module Docstring
+
+Immediately after the imports, every file must include a module docstring using the `/-! ... -/` comment syntax. This is distinct from a regular `-- comment` or a `doc_string` attached to a declaration — it documents the file as a whole.
+
+```lean
+/-
+Copyright (c) 2024 Author Name. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Author Name
+-/
+import Mathlib.Algebra.Group.Defs
+
+/-!
+# Title of the Module
+
+This module provides a formalization of ...
+
+## Main definitions
+
+* `MyDef`: a structure representing ...
+* `myFunction`: computes ...
+
+## Main results
+
+* `myTheorem`: states that ...
+* `myCorollary`: a consequence of `myTheorem` showing ...
+
+## Implementation notes
+
+We follow the convention that ... because ...
+
+## References
+
+* [Author, *Title*][bibkey]
+-/
+```
+
+The `#` heading should match the module's mathematical topic, not its file path. The `## Main definitions` and `## Main results` sections are conventional but optional for very small files. Implementation notes and references are encouraged whenever non-obvious choices were made.
+
+## Line Length
+
+The hard maximum line length in Mathlib is **100 characters**. Lines exceeding this limit are reported as errors by the style linter.
+
+<Note>
+The 100-character rule applies to all lines — including comments, docstrings, string literals, and code. There are no exceptions.
+</Note>
+
+The `fix_long_lines.py` script in the `scripts/` directory can help automatically wrap some categories of long lines, but manual adjustment is usually required.
+
+## File Length
+
+Files should not exceed **1500 lines**. The `linter.style.longFile` linter (configured with `.ofNat 1500` in `lakefile.lean`) will emit a warning when this threshold is crossed. If your file is approaching this limit, consider splitting it into logically coherent sub-modules.
+
+## Indentation
+
+Mathlib uses **2-space indentation** throughout. Tabs are never used.
+
+```lean
+theorem Nat.add_comm (n m : ℕ) : n + m = m + n := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Nat.succ_add, ih, Nat.add_succ]
+```
+
+Each tactic inside a `by` block is indented 2 spaces relative to the `by` keyword's line. Nested tactic blocks (e.g., `induction` cases) add another 2 spaces per level.
+
+## Unicode Symbols
+
+Lean 4 and Mathlib make extensive use of Unicode. Contributors are expected to use the standard Unicode symbols rather than ASCII alternatives in all new code.
+
+| Symbol | Input sequence | Meaning |
+|--------|---------------|---------|
+| `∀` | `\forall` | For all |
+| `∃` | `\exists` | There exists |
+| `→` | `\to` or `\r` | Implies / function type |
+| `↦` | `\mapsto` | Maps to (in `fun`) |
+| `∧` | `\and` | Logical and |
+| `∨` | `\or` | Logical or |
+| `¬` | `\not` or `\n` | Negation |
+| `≤` | `\le` | Less than or equal |
+| `≥` | `\ge` | Greater than or equal |
+| `∈` | `\in` | Set membership |
+| `∉` | `\notin` | Not a member |
+| `⊆` | `\sub` | Subset |
+| `⊂` | `\ssub` | Strict subset |
+| `ℕ` | `\N` | Natural numbers |
+| `ℤ` | `\Z` | Integers |
+| `ℚ` | `\Q` | Rationals |
+| `ℝ` | `\R` | Reals |
+| `ℂ` | `\C` | Complex numbers |
+
+<Tip>
+In VS Code with the Lean 4 extension, typing `\` followed by the input sequence shows a preview of the resulting Unicode character before you commit to it.
+</Tip>
+
+## Proof Style
+
+### Tactic proofs
+
+Prefer `by` tactic blocks for most proofs. Tactic proofs are more readable for human reviewers and easier to maintain as Lean evolves:
+
+```lean
+theorem add_zero (n : ℕ) : n + 0 = n := by
+  simp
+```
+
+### Term-mode proofs
+
+Term-mode proofs are acceptable — and encouraged — when they are concise and the proof term is obviously correct:
+
+```lean
+theorem id_comp {α β : Type*} (f : α → β) : id ∘ f = f := rfl
+```
+
+Do not use term-mode proofs when the resulting expression is hard to read or spans multiple lines.
+
+### `omega`, `simp`, `ring`, and `linarith`
+
+Use automation freely, but with judgment:
+
+- `omega` for linear arithmetic over `ℕ` and `ℤ`.
+- `ring` for equalities in commutative (semi)rings.
+- `linarith` for linear arithmetic over ordered fields.
+- `simp` for simplification with the simp set — but prefer `simp [lemma_name]` over bare `simp` in theorems that are not themselves `@[simp]` lemmas, so the proof is more robust.
+
+### `decide`
+
+`decide` is useful for decidable propositions over finite types, but avoid it for propositions with large search spaces.
+
+## Docstrings
+
+Every **public** definition, theorem, structure, and typeclass instance should have a docstring immediately preceding it, written as a `/-- ... -/` comment:
+
+```lean
+/-- The `Monoid` structure on `ℕ` given by addition. -/
+instance : AddMonoid ℕ where
+  add_zero := Nat.add_zero
+  zero_add := Nat.zero_add
+  add_assoc := Nat.add_assoc
+```
+
+Docstrings should describe *what* the declaration is or states, not *how* it is proved. They appear in the generated HTML documentation and in the Lean infoview.
+
+## `section` and `namespace`
+
+Use `namespace` to group related declarations and to avoid name repetition:
+
+```lean
+namespace MyGroup
+
+theorem mul_comm (a b : MyGroup) : a * b = b * a := by
+  ...
+
+end MyGroup
+```
+
+Use `section` when you need to introduce local `variable` declarations or `open` statements that should not persist beyond the section:
+
+```lean
+section CommRingLemmas
+
+variable {R : Type*} [CommRing R]
+
+theorem add_mul_self (a b : R) : (a + b) * (a + b) = a * a + 2 * a * b + b * b := by
+  ring
+
+end CommRingLemmas
+```
+
+## `variable` Declarations
+
+Use `variable` to avoid repeating type hypotheses across multiple related lemmas:
+
+```lean
+variable {α : Type*} [Fintype α] [DecidableEq α]
+
+theorem card_union_add_card_inter (s t : Finset α) :
+    (s ∪ t).card + (s ∩ t).card = s.card + t.card := by
+  ...
+```
+
+Variables declared with `variable` are only included in a theorem's signature when they actually appear in that theorem's statement or proof — Lean inserts them automatically.
+
+## `@[simp]` Lemmas
+
+The `@[simp]` attribute marks a lemma as a rewrite rule for Lean's `simp` tactic. Apply it carefully:
+
+<CardGroup cols={2}>
+  <Card title="Good simp lemmas" icon="check">
+    Lemmas that simplify a term to a more normal form: `List.length_nil`, `Nat.zero_add`, `if_true`. The right-hand side should be structurally simpler than the left.
+  </Card>
+  <Card title="Bad simp lemmas" icon="xmark">
+    Lemmas that could create simp loops, lemmas whose RHS is not simpler, or lemmas that are only useful in very specific contexts. Prefer explicit rewriting with `rw` in those cases.
+  </Card>
+</CardGroup>
+
+<Warning>
+Adding `@[simp]` to a lemma affects every downstream file that calls `simp`. A poorly chosen simp lemma can break proofs across Mathlib. When in doubt, leave the attribute off and let reviewers decide.
+</Warning>
+
+## Avoiding `sorry`
+
+**Never submit a PR containing `sorry`.** The `sorry` tactic admits any goal without proof and will make CI pass falsely. Use it only as a local placeholder during development, and remove all instances before opening a PR.
+
+If you need to submit partial work, open a draft PR and explain which parts are incomplete.
+
+## `adaptation_note`
+
+When a piece of code needs to change because of an upstream Lean or Batteries update, use the `adaptation_note` comment to explain the situation:
+
+```lean
+-- adaptation_note: This proof was changed after leanprover/lean4#1234
+-- because `simp` no longer unfolds `foo` by default.
+```
+
+This helps future contributors understand why the code looks the way it does and makes it easier to clean up after the upstream issue is resolved.
+
+## `assert_not_exists`
+
+The `assert_not_exists` command checks that a given declaration is *not* yet imported, which is useful for verifying import independence:
+
+```lean
+-- Check that we haven't accidentally imported all of Mathlib.Algebra here
+assert_not_exists Module
+```
+
+This is used in early-library files to document and enforce intentional import boundaries.
+
+<Accordion title="Full example of a well-formatted Mathlib file">
+
+```lean
+/-
+Copyright (c) 2024 Author Name. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Author Name
+-/
+import Mathlib.Algebra.Group.Defs
+
+/-!
+# Title of the Module
+
+This module provides ...
+
+## Main definitions
+
+* `MyDef`: description
+
+## Main results
+
+* `myTheorem`: description
+-/
+
+assert_not_exists Module
+
+namespace MyNamespace
+
+variable {G : Type*} [Group G]
+
+/-- Every element of a group has a unique left inverse. -/
+theorem left_inv_unique (a b : G) (h : b * a = 1) : b = a⁻¹ := by
+  have := mul_right_cancel₀ (a := a) (b := b * a) (c := a⁻¹)
+  simp [h, mul_inv_cancel] at this
+  exact this
+
+end MyNamespace
+```
+
+</Accordion>

@@ -1,0 +1,146 @@
+---
+title: "Lean 4 Mathlib Tactics: Complete Proof Automation Guide"
+sidebarTitle: "Overview"
+description: "An overview of Mathlib's tactic library — how tactics work in Lean 4, how to import them, and a survey of the most commonly used proof automation tools."
+---
+
+Tactics in Lean 4 are metaprograms that transform the current proof state — a collection of hypotheses and a goal — into zero or more simpler subgoals. Rather than constructing a complete proof term by hand, you enter *tactic mode* with the `by` keyword and issue a sequence of commands that incrementally discharge obligations. Mathlib ships hundreds of tactics covering arithmetic decision procedures, simplification engines, general-purpose proof search, and structural decomposition tools, making it possible to prove substantial mathematical results with concise, readable proof scripts.
+
+## Importing Tactics
+
+The simplest way to access all of Mathlib's tactics is a single import at the top of your file:
+
+```lean
+import Mathlib
+```
+
+This imports the entire library, including every tactic. For faster compilation in larger projects, you can import only what you need. Each tactic lives in its own module:
+
+```lean
+import Mathlib.Tactic.Linarith   -- linarith, nlinarith
+import Mathlib.Tactic.Ring       -- ring, ring_nf
+import Mathlib.Tactic.NormNum    -- norm_num
+import Mathlib.Tactic.Omega      -- omega
+import Mathlib.Tactic.Positivity -- positivity
+import Mathlib.Tactic.GCongr     -- gcongr
+```
+
+<Tip>
+When writing a standalone example or experimenting interactively, `import Mathlib` is the most convenient choice. Switch to granular imports once you know which tactics your project actually uses.
+</Tip>
+
+## Tactic Mode vs Term Mode
+
+Lean 4 supports two styles of proof writing. In **term mode**, you construct a proof term directly using function application, pattern matching, and anonymous constructors. In **tactic mode**, opened with `by`, you describe how to build that term step by step.
+
+```lean
+-- Term mode: construct the proof explicitly
+theorem add_comm_term (a b : ℕ) : a + b = b + a :=
+  Nat.add_comm a b
+
+-- Tactic mode: let tactics fill in the details
+theorem add_comm_tactic (a b : ℕ) : a + b = b + a := by
+  ring
+```
+
+The two styles can be freely mixed: a tactic block can appear inside a term, and term-mode expressions can appear as arguments to tactics.
+
+## Experimentation Keywords
+
+Lean 4 provides several commands useful for exploration:
+
+```lean
+-- Check the type of an expression or lemma
+#check Nat.Prime
+
+-- Evaluate a closed expression
+#eval 2 ^ 10
+
+-- Prove a statement without giving it a name
+example (n : ℕ) (h : n > 0) : n ≥ 1 := by omega
+
+-- Search for lemmas matching a pattern
+#check?  -- (in some Mathlib configurations)
+example (x y : ℝ) : |x + y| ≤ |x| + |y| := abs_add x y
+```
+
+The `hint` tactic (available after `import Mathlib`) suggests which tactics might close the current goal:
+
+```lean
+example (x y : ℝ) (h : x > 0) (h2 : y > 0) : x + y > 0 := by
+  hint  -- suggests: linarith, positivity, …
+```
+
+## Tactic Taxonomy
+
+Mathlib tactics fall into four broad categories. Each has its own documentation page.
+
+<CardGroup cols={2}>
+  <Card title="Arithmetic" href="/tactics/arithmetic" icon="calculator">
+    Decision procedures for numeric goals: `linarith`, `nlinarith`, `omega`, `norm_num`, `ring`, `ring_nf`, `abel`, `field_simp`.
+  </Card>
+  <Card title="Simplification" href="/tactics/simplification" icon="wand-magic-sparkles">
+    Term rewriting and normalization: `simp`, `simp_rw`, `simp_all`, `norm_cast`, `push_cast`, `push_neg`, `gcongr`.
+  </Card>
+  <Card title="Automation" href="/tactics/automation" icon="robot">
+    General proof search and property provers: `decide`, `native_decide`, `tauto`, `aesop`, `positivity`, `fun_prop`, `continuity`, `measurability`.
+  </Card>
+  <Card title="Structural" href="/tactics/structural" icon="sitemap">
+    Proof structure and decomposition: `ext`, `use`, `obtain`, `rcases`, `induction`, `constructor`, `apply`, `exact`, `refine`, `by_contra`, `wlog`, `tfae_have`.
+  </Card>
+</CardGroup>
+
+## Quick-Reference Tactic Grid
+
+The table below lists the most-used tactics with a one-line description.
+
+| Tactic | What it does |
+|---|---|
+| `linarith` | Proves linear arithmetic goals over ordered rings |
+| `nlinarith` | Extends `linarith` to basic nonlinear arithmetic |
+| `omega` | Decision procedure for `ℕ`/`ℤ` linear arithmetic, handles `%` and `/` |
+| `norm_num` | Normalizes and proves numeric expressions (primes, fractions, etc.) |
+| `ring` | Proves equalities in commutative (semi)rings |
+| `abel` | Proves equalities in additive commutative groups/monoids |
+| `field_simp` | Clears denominators in field expressions |
+| `simp` | Rewrites using `@[simp]`-tagged lemmas |
+| `simp_rw` | Like `simp only` but rewrites under binders |
+| `norm_cast` | Normalizes numeric coercions (ℕ → ℤ → ℚ → ℝ) |
+| `push_neg` | Pushes `¬` through quantifiers and connectives |
+| `gcongr` | Applies congruence lemmas for inequality goals |
+| `decide` | Evaluates decidable propositions by kernel reduction |
+| `native_decide` | Like `decide` but compiles to native code |
+| `aesop` | General proof search via forward/backward chaining + simp |
+| `positivity` | Proves `0 ≤ e`, `0 < e`, or `e ≠ 0` |
+| `fun_prop` | Proves function properties (continuity, measurability, etc.) |
+| `ext` | Applies extensionality lemmas tagged `@[ext]` |
+| `use` | Provides witnesses for existential goals |
+| `obtain` / `rcases` | Destructures hypotheses by pattern matching |
+| `induction` | Induction on an inductive type |
+| `by_contra` | Introduces `¬ goal` and switches to proving `False` |
+| `wlog` | Reduces goal to a canonical case |
+
+## The `?` Variants
+
+Many Mathlib tactics have a `?` variant that, on success, prints a more explicit version of the call it used. This is invaluable for learning and for making proofs more robust:
+
+```lean
+example (x y : ℝ) (h1 : x ≥ 1) (h2 : y ≥ 2) : x + y ≥ 3 := by
+  linarith?
+  -- Prints: Try this: linarith [h1, h2]
+
+example (n : ℕ) : n + 0 = n := by
+  simp?
+  -- Prints: Try this: simp only [add_zero]
+```
+
+<Note>
+Using `linarith?` or `simp?` in finished proofs can slow down compilation. Replace the `?` call with the printed suggestion once you are happy with the proof.
+</Note>
+
+## Further Reading
+
+- [Arithmetic Tactics](/tactics/arithmetic) — `linarith`, `ring`, `norm_num`, `omega`, `abel`, `field_simp`
+- [Simplification Tactics](/tactics/simplification) — `simp`, `simp_rw`, `norm_cast`, `push_neg`, `gcongr`
+- [Automation Tactics](/tactics/automation) — `aesop`, `positivity`, `fun_prop`, `decide`
+- [Structural Tactics](/tactics/structural) — `ext`, `use`, `obtain`, `induction`, `wlog`, `tfae_have`

@@ -1,0 +1,394 @@
+---
+title: "Other Mathematical Areas in Mathlib: Combinatorics to Dynamics"
+sidebarTitle: "Other Areas"
+description: "A guide to Mathlib's combinatorics, probability, set theory, order theory, algebraic topology, representation theory, and condensed mathematics coverage."
+---
+
+Beyond its flagship coverage of algebra, analysis, topology, number theory, and category theory, Mathlib formalizes a remarkably broad range of additional mathematical domains. This page surveys ten further areas — combinatorics, probability theory, set theory, logic and computability, order theory, algebraic topology, representation theory, information theory, topological dynamics, and condensed mathematics — each of which is the subject of substantial research-level formalization in the library. Together these areas fill the `Mathlib/Combinatorics/`, `Mathlib/Probability/`, `Mathlib/SetTheory/`, `Mathlib/Logic/`, `Mathlib/Order/`, `Mathlib/AlgebraicTopology/`, `Mathlib/RepresentationTheory/`, `Mathlib/InformationTheory/`, `Mathlib/Dynamics/`, and `Mathlib/Condensed/` directories.
+
+## Combinatorics
+
+Mathlib's combinatorics library (`Mathlib/Combinatorics/`) covers graph theory, extremal combinatorics, Ramsey theory, additive combinatorics, enumerative combinatorics, and set families.
+
+### Graph Theory
+
+```lean
+-- Simple graphs
+#check SimpleGraph     -- A type with a symmetric irreflexive adjacency relation
+#check SimpleGraph.Adj -- SimpleGraph.Adj G u v : u and v are adjacent
+
+-- Degree-sum formula
+#check SimpleGraph.sum_degrees_eq_twice_card_edges
+-- ∑ v, G.degree v = 2 * G.edgeFinset.card
+
+-- Matchings
+#check SimpleGraph.Subgraph.IsMatching
+
+-- Adjacency matrix
+#check SimpleGraph.adjMatrix    -- G.adjMatrix R : Matrix V V R
+```
+
+<CardGroup cols={2}>
+  <Card title="Turán's Theorem" icon="chart-bar">
+    The densest K_{r+1}-free graph on n vertices is the Turán graph.
+
+    ```lean
+    #check SimpleGraph.isTuranMaximal_iff_nonempty_iso_turanGraph
+    ```
+  </Card>
+  <Card title="Szemerédi Regularity Lemma" icon="table-cells">
+    ```lean
+    #check szemeredi_regularity
+    -- Every graph has an ε-regular partition
+    ```
+  </Card>
+  <Card title="Triangle Removal Lemma" icon="triangle-exclamation">
+    ```lean
+    #check SimpleGraph.triangle_removal
+    ```
+  </Card>
+  <Card title="Hall's Marriage Theorem" icon="ring">
+    ```lean
+    #check Finset.all_card_le_biUnion_card_iff_exists_injective
+    ```
+  </Card>
+</CardGroup>
+
+### Ramsey Theory
+
+```lean
+-- van der Waerden's theorem
+#check Combinatorics.exists_mono_homothetic_copy
+-- Any 2-coloring of [N] contains a monochromatic arithmetic progression
+
+-- Hales-Jewett theorem
+#check Combinatorics.Line.exists_mono_in_high_dimension
+
+-- Hindman's theorem (finite sums)
+#check Hindman.FS_partition_regular
+```
+
+### Additive Combinatorics
+
+```lean
+-- Sets without 3-term arithmetic progressions
+#check ThreeAPFree
+
+-- Roth's theorem
+#check roth_3ap_theorem_nat
+-- Dense subsets of ℕ contain 3-APs
+
+-- Cauchy-Davenport theorem
+#check ZMod.cauchy_davenport
+-- |A + B| ≥ min(p, |A| + |B| - 1) in ℤ/pℤ
+
+-- Plünnecke-Petridis inequality
+#check Finset.pluennecke_petridis_inequality_add
+
+-- Ruzsa triangle inequality
+#check Finset.ruzsa_triangle_inequality_sub_sub_sub
+
+-- Additive energy
+#check Finset.addEnergy   -- E(A) = #{(a,b,c,d) : a+b = c+d}
+```
+
+### Enumerative Combinatorics
+
+```lean
+#check catalan    -- Catalan numbers Cₙ
+#check Multiset.bell  -- Bell numbers Bₙ
+#check DyckWord       -- Balanced parenthesizations / Dyck words
+```
+
+---
+
+## Probability Theory
+
+Mathlib's probability library (`Mathlib/Probability/`) is built on top of the measure theory infrastructure and covers everything from elementary probability to martingale theory and limit theorems.
+
+### Foundations
+
+```lean
+-- A probability measure is a measure with total mass 1
+#check MeasureTheory.IsProbabilityMeasure
+-- isProbabilityMeasure μ : μ Set.univ = 1
+
+-- Independence
+#check ProbabilityTheory.iIndepSet        -- Independent events
+#check ProbabilityTheory.iIndep           -- Independent sigma-algebras
+#check ProbabilityTheory.iIndepFun        -- Independent random variables
+
+-- Conditional probability
+#check ProbabilityTheory.cond
+-- ProbabilityTheory.cond μ s : probability conditioned on event s
+
+-- Conditional expectation
+#check MeasureTheory.condExp              -- 𝔼[f | ℱ]
+```
+
+### Distributions
+
+```lean
+-- Discrete distributions
+#check PMF                            -- Probability mass function
+#check ProbabilityTheory.bernoulliMeasure
+#check ProbabilityTheory.binomial
+#check ProbabilityTheory.geometricMeasure
+#check ProbabilityTheory.poissonMeasure
+
+-- Continuous distributions
+#check ProbabilityTheory.expMeasure
+#check ProbabilityTheory.gaussianReal     -- N(μ, σ²)
+#check ProbabilityTheory.IsGaussian       -- Gaussian measure on a vector space
+#check MeasureTheory.HasPDF               -- Existence of a probability density function
+```
+
+### Limit Theorems
+
+```lean
+-- Strong law of large numbers
+#check ProbabilityTheory.strong_law_ae
+-- (1/n) * ∑_{i<n} Xᵢ → 𝔼[X₁] almost surely
+
+-- Central limit theorem
+#check ProbabilityTheory.tendsToInDistribution_inv_sqrt_mul_sum_sub
+-- (∑Xᵢ - n*μ) / √(n*σ²) converges in distribution to N(0,1)
+
+-- Chebyshev's inequality
+#check ProbabilityTheory.meas_ge_le_variance_div_sq
+
+-- Markov's inequality
+#check MeasureTheory.mul_meas_ge_le_lintegral
+
+-- Kolmogorov's 0-1 law
+#check ProbabilityTheory.measure_zero_or_one_of_measurableSet_limsup_atTop
+```
+
+### Stochastic Processes
+
+```lean
+#check MeasureTheory.Martingale          -- Martingale w.r.t. a filtration
+#check MeasureTheory.IsStoppingTime      -- Stopping time
+#check MeasureTheory.hittingBtwn         -- Hitting time
+#check ProbabilityTheory.IsGaussianProcess  -- Gaussian process
+```
+
+---
+
+## Set Theory
+
+```lean
+-- The ZFSet model of ZFC
+#check ZFSet    -- A model of Zermelo-Fraenkel set theory inside Lean
+
+-- Sets and Finsets (used throughout Mathlib)
+#check Set      -- Set α : a predicate on α (classical sets)
+#check Finset   -- Finset α : a finite set with decidable equality
+```
+
+### Ordinals
+
+```lean
+#check Ordinal            -- The type of ordinals
+#check Ordinal.add        -- Ordinal addition (non-commutative)
+#check Ordinal.mul        -- Ordinal multiplication
+#check Ordinal.CNF        -- Cantor normal form ω^a₁*n₁ + … + ω^aₖ*nₖ
+#check Ordinal.IsFundamentalSeq  -- Fundamental sequences for limit ordinals
+#check Ordinal.epsilon    -- Epsilon numbers: ε_α = ω^(ε_α)
+#check Ordinal.gamma      -- Gamma numbers (fixed points of α ↦ ω_α)
+```
+
+### Cardinals
+
+```lean
+#check Cardinal           -- The type of cardinals
+#check Cardinal.aleph     -- ℵ_α : the aleph numbers
+#check Cardinal.beth      -- ℶ_α : the beth numbers
+#check Order.cof          -- Cofinality cf(α)
+
+-- Cantor's theorem: |𝒫(α)| > |α|
+#check Cardinal.cantor    -- |α| < 2^|α|
+```
+
+---
+
+## Logic and Computability
+
+### Computability Theory
+
+```lean
+-- Computable functions
+#check Computable           -- A function ℕ → ℕ is computable
+#check Primrec              -- Primitive recursive function
+#check Turing.TM0.Machine   -- A Turing machine
+
+-- The halting problem is undecidable
+#check ComputablePred.halting_problem
+
+-- Rice's theorem
+#check ComputablePred.rice
+-- No non-trivial semantic property of programs is decidable
+
+-- Turing degrees
+#check TuringDegree         -- Equivalence classes under Turing reducibility
+
+-- Ackermann function (not primitive recursive)
+#check ack
+```
+
+### Formal Languages
+
+```lean
+#check Language           -- A set of words over an alphabet
+#check DFA                -- Deterministic finite automaton
+#check NFA                -- Nondeterministic finite automaton
+#check RegularExpression  -- Regular expressions
+#check Language.IsRegular -- Predicate: a language is regular
+#check ContextFreeGrammar -- Context-free grammar
+```
+
+### Model Theory
+
+```lean
+#check FirstOrder.Language.Structure   -- A first-order structure
+#check FirstOrder.Language.Formula     -- A first-order formula
+#check FirstOrder.Language.Theory.IsSatisfiable  -- Satisfiability
+
+-- Compactness theorem
+#check FirstOrder.Language.Theory.isSatisfiable_iff_isFinitelySatisfiable
+
+-- Löwenheim-Skolem theorem
+#check FirstOrder.Language.exists_elementaryEmbedding_card_eq
+```
+
+---
+
+## Order Theory
+
+Order theory in Mathlib (`Mathlib/Order/`) provides the abstract framework for lattices, Galois connections, and well-orders used throughout the library.
+
+```lean
+-- Basic order structures
+#check PartialOrder      -- Reflexive, antisymmetric, transitive relation
+#check LinearOrder       -- Total order (every pair is comparable)
+#check Lattice           -- Partial order with meet (⊓) and join (⊔)
+#check CompleteLattice   -- Lattice with arbitrary meets and joins
+
+-- Galois connections
+#check GaloisConnection  -- l ⊣ u : l a ≤ b ↔ a ≤ u b
+#check GaloisInsertion   -- Galois connection where l is a section of u
+#check GaloisCoinsertion
+
+-- Bounds and limits
+#check Filter.limsup     -- lim sup via filters
+#check Filter.liminf     -- lim inf via filters
+
+-- Well-orders and Zorn's lemma
+#check WellOrder
+#check zorn_nonempty_preorder  -- Zorn's lemma
+```
+
+---
+
+## Algebraic Topology
+
+```lean
+-- Simplicial sets
+#check AlgebraicTopology.SimplicialSet
+-- A functor Δᵒᵖ ⥤ Type*
+
+-- Simplicial objects in a category
+#check CategoryTheory.SimplicialObject
+
+-- Chain complexes and homology
+#check ChainComplex
+#check HomologicalComplex.homology
+
+-- The normalized Moore complex
+#check AlgebraicTopology.normalizedMooreComplex
+```
+
+<Note>
+Algebraic topology in Mathlib is an active development area. Simplicial sets, the Dold-Kan correspondence, and basic homological algebra are well-established, while singular homology and cohomology are under active formalization.
+</Note>
+
+---
+
+## Representation Theory
+
+```lean
+-- Group representations over a field
+#check Representation
+-- Representation k G V : a group homomorphism G →* GL(V)
+
+-- The category of finite-dimensional representations
+#check FDRep     -- FDRep k G : the category of fin-dim k[G]-modules
+
+-- Characters
+#check FDRep.character         -- The character χ_V : G → k
+#check FDRep.char_orthonormal  -- Orthogonality of characters
+
+-- The representation ring / Burnside ring
+-- (accessible via the FDRep category)
+```
+
+---
+
+## Information Theory
+
+```lean
+-- Shannon entropy
+#check MeasureTheory.Measure.entropy
+-- H(X) = -∑ p(x) log p(x)
+
+-- Kullback-Leibler divergence
+#check MeasureTheory.Measure.klDiv
+-- KL(μ ‖ ν) = ∫ log(dμ/dν) dμ
+
+-- Log-sum inequality and data processing
+-- (see Mathlib.InformationTheory)
+```
+
+---
+
+## Topological Dynamics
+
+```lean
+-- Omega-limit sets
+#check omegaLimit
+-- ω-limit set: cluster points of forward orbits
+
+-- Fixed and periodic points
+#check Function.fixedPoints    -- {x | f x = x}
+#check Function.periodicPts    -- {x | ∃ n, f^n x = x}
+
+-- Circle dynamics
+#check CircleDeg1Lift.translationNumber
+-- The rotation number of an orientation-preserving homeomorphism of S¹
+
+-- Semiconjugacy results
+#check CircleDeg1Lift.semiconj_of_group_action_of_forall_translationNumber_eq
+```
+
+---
+
+## Condensed Mathematics
+
+Condensed mathematics (Clausen–Scholze) is one of the most recent and advanced additions to Mathlib.
+
+```lean
+-- Condensed sets: sheaves on the category of compact Hausdorff spaces
+-- (with the coherent topology)
+-- Condensed.toCompHaus : the site
+
+-- Condensed modules over a ring R
+#check Condensed.Module
+-- A sheaf of R-modules on CompHaus
+
+-- Solid abelian groups and light condensed mathematics
+-- (under active development in Mathlib)
+```
+
+<Tip>
+The condensed mathematics formalization in Mathlib is based on Scholze's "Lectures on Condensed Mathematics." The development in Lean 4 was spearheaded as part of the Liquid Tensor Experiment, one of the landmark achievements in formal mathematics.
+</Tip>

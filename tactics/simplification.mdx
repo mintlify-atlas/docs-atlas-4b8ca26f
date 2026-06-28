@@ -1,0 +1,272 @@
+---
+title: "Simplification Tactics in Mathlib: simp, norm_cast, gcongr"
+sidebarTitle: "Simplification"
+description: "How to use Mathlib's simplification tactics: simp, simp_rw, simp_all, norm_cast, push_cast, push_neg, and gcongr, with options, flags, and examples."
+---
+
+Simplification is one of the most fundamental activities in interactive theorem proving. Mathlib provides a layered set of tactics for rewriting, normalizing, and rearranging expressions: the powerful `simp` engine and its variants, coercion-handling tactics like `norm_cast` and `push_cast`, logical normalization with `push_neg`, and the congruence tactic `gcongr` for inequality reasoning. Understanding how these tactics work and when to reach for each one is key to writing efficient Mathlib proofs.
+
+## `simp`
+
+`simp` is Mathlib's central simplification tactic. It repeatedly applies rewrite rules — primarily lemmas tagged with the `@[simp]` attribute — until no more rewrites apply. It is used everywhere: to unfold definitions, reduce numeric expressions, simplify logical connectives, and normalize terms before other tactics take over.
+
+<Tabs>
+  <Tab title="Basic forms">
+```lean
+-- Use the full simp set (all @[simp] lemmas)
+example (n : ℕ) : n + 0 = n := by simp
+
+-- Use only specific lemmas
+example (n : ℕ) : 0 + n = n := by simp only [zero_add]
+
+-- Pass extra lemmas not in the simp set
+example (a b : ℝ) (h : a = b) : a + 1 = b + 1 := by simp [h]
+
+-- Use all hypotheses as simp lemmas
+example (a b : ℝ) (h : a = 0) : a * b = 0 := by simp [*]
+```
+  </Tab>
+  <Tab title="Location variants">
+```lean
+-- Simplify a hypothesis
+example (n : ℕ) (h : n + 0 = 5) : n = 5 := by
+  simp at h
+  exact h
+
+-- Simplify everywhere (goal and all hypotheses)
+example (a : ℕ) (h : a + 0 = 3) : a + 0 = 3 := by
+  simp only [add_zero] at *
+  exact h
+
+-- Simplify only in specific hypotheses
+example (a b : ℕ) (h1 : a + 0 = 1) (h2 : b + 0 = 2) : a + b = 3 := by
+  simp only [add_zero] at h1 h2
+  omega
+```
+  </Tab>
+  <Tab title="Debugging">
+```lean
+-- simp? prints which lemmas were used
+example (n : ℕ) : n * 1 = n := by
+  simp?
+  -- Prints: Try this: simp only [mul_one]
+
+-- simp? with only prints a minimal simp only call
+example (a b : ℝ) : |(-a)| = |a| := by
+  simp?
+```
+  </Tab>
+</Tabs>
+
+**Common `simp` flags and options:**
+
+| Syntax | Effect |
+|---|---|
+| `simp` | Full simp set, simplify goal |
+| `simp only [l1, l2]` | Use only the listed lemmas |
+| `simp [h]` | Add `h` on top of the default simp set |
+| `simp [*]` | Use all local hypotheses as rewrite rules |
+| `simp at h` | Simplify hypothesis `h` |
+| `simp only [] at *` | Apply listed lemmas everywhere |
+| `simp?` | Print the `simp only` call that succeeded |
+| `simp (config := { … })` | Pass a `Simp.Config` for fine-grained control |
+
+<Warning>
+Avoid bare `simp` in the middle of long proofs — it can silently close goals in unexpected ways, making proofs fragile. Prefer `simp only [...]` with an explicit lemma list once you know which rewrites are needed.
+</Warning>
+
+<Accordion title="Adding your own simp lemmas">
+Tag a lemma with `@[simp]` to include it in the default simp set:
+
+```lean
+@[simp]
+theorem myDef_zero : myDef 0 = 1 := by rfl
+
+-- Now simp will use this automatically
+example : myDef 0 + 1 = 2 := by simp
+```
+
+Use `@[simp]` for lemmas that:
+- Simplify a term to a structurally simpler one
+- Have a single canonical direction (left-to-right)
+- Do not introduce new variables on the right-hand side
+
+Avoid `@[simp]` for lemmas that could create rewriting loops.
+</Accordion>
+
+---
+
+## `simp_rw`
+
+`simp_rw` behaves like `simp only` but rewrites *under binders* — inside `fun`, `∀`, `∃`, and similar constructs. This is the main difference from `simp only`, which cannot rewrite under a lambda abstraction.
+
+```lean
+-- simp only fails here: cannot rewrite under the ∀ binder
+-- simp_rw succeeds
+example : (∀ n : ℕ, n + 0 = n) := by
+  simp_rw [add_zero]
+
+example : (fun x : ℝ => x * 1) = (fun x => x) := by
+  simp_rw [mul_one]
+
+-- simp_rw rewrites left-to-right by default; use ← to reverse
+example (h : ∀ x : ℝ, f x = g x) : (∀ x, g x + 1 = f x + 1) := by
+  simp_rw [← h]
+```
+
+<Tip>
+Use `simp_rw` instead of `simp only` whenever the term you want to rewrite appears under a binder. If you are not sure, try `simp only` first; if it fails or leaves the subterm untouched, switch to `simp_rw`.
+</Tip>
+
+---
+
+## `simp_all`
+
+`simp_all` is a powerful variant that simplifies the entire proof state — the goal and every hypothesis — simultaneously, using all hypotheses as rewrite rules for each other. This can produce shorter proofs than chaining `simp at *` calls, but it can also be slower and less predictable.
+
+```lean
+example (a b : Prop) (ha : a) (hab : a → b) : b := by
+  simp_all
+
+-- simp_all can close many routine goals in one step
+example (n : ℕ) (h : n + 0 = 5) : n * 1 = 5 := by
+  simp_all
+```
+
+---
+
+## `norm_cast` and `push_cast`
+
+Lean 4 frequently involves coercions between numeric types — `ℕ → ℤ → ℚ → ℝ` — and these coercions can clutter proof goals. The cast-handling tactics normalize or redirect these coercions.
+
+**`norm_cast`** normalizes expressions involving coercions by applying congruence lemmas tagged `@[norm_cast]`. It tries to move all casts to the outermost position, canceling redundant coercions.
+
+**`push_cast`** pushes coercions *inward* — towards the leaves of an expression tree. This is useful when you want to work with the cast applied to individual subterms.
+
+**`pull_cast`** (inverse of `push_cast`) pulls coercions *outward*.
+
+<Tabs>
+  <Tab title="norm_cast">
+```lean
+-- Normalize a coercion-heavy goal
+example (n : ℕ) : (n : ℝ) ≥ 0 := by
+  exact_mod_cast n.zero_le
+
+example (n m : ℕ) (h : (n : ℤ) < m) : n < m := by
+  exact_mod_cast h
+
+-- norm_cast at h: normalize coercions in a hypothesis
+example (n : ℕ) (h : (n : ℤ) = 5) : n = 5 := by
+  exact_mod_cast h
+```
+  </Tab>
+  <Tab title="push_cast">
+```lean
+-- Push casts inside arithmetic operations
+example (n m : ℕ) : ((n + m : ℕ) : ℤ) = n + m := by
+  push_cast
+  ring
+
+example (n : ℕ) : ((2 * n : ℕ) : ℝ) = 2 * n := by
+  push_cast
+  ring
+```
+  </Tab>
+  <Tab title="cast helpers">
+```lean
+-- exact_mod_cast: like exact but normalizes casts first
+example (n : ℕ) (h : n > 0) : (n : ℝ) > 0 := by exact_mod_cast h
+
+-- apply_mod_cast: like apply but normalizes casts
+example (n : ℕ) (h : n ≥ 1) : (n : ℚ) ≥ 1 := by exact_mod_cast h
+
+-- assumption_mod_cast: like assumption but normalizes casts
+example (n : ℕ) (h : (n : ℤ) ≠ 0) : n ≠ 0 := by exact_mod_cast h
+```
+  </Tab>
+</Tabs>
+
+---
+
+## `push_neg`
+
+`push_neg` pushes negations inward through quantifiers and logical connectives, transforming them according to the following rules:
+
+| Input | Output |
+|---|---|
+| `¬ ∀ x, P x` | `∃ x, ¬ P x` |
+| `¬ ∃ x, P x` | `∀ x, ¬ P x` |
+| `¬ (P ∧ Q)` | `P → ¬ Q` |
+| `¬ (P → Q)` | `P ∧ ¬ Q` |
+| `¬ (a < b)` | `b ≤ a` |
+| `¬ (a ≤ b)` | `b < a` |
+| `¬ (a = b)` | `a ≠ b` |
+
+```lean
+-- Push negations through quantifiers
+example : ¬ (∀ x : ℝ, x ^ 2 ≥ 0) → ∃ x : ℝ, x ^ 2 < 0 := by
+  intro h
+  push_neg at h
+  exact h
+
+-- Push negation through implication
+example (h : ¬ (∀ n : ℕ, n > 0 → n ≥ 1)) : ∃ n : ℕ, n > 0 ∧ n < 1 := by
+  push_neg at h
+  exact h
+
+-- push_neg on the goal
+example : ¬ ∀ x : ℝ, x > 0 := by
+  push_neg
+  use -1
+  norm_num
+```
+
+<Tip>
+`push_neg` is often used in tandem with `by_contra` or `contrapose` to convert a goal to its contrapositive form before applying other tactics.
+</Tip>
+
+---
+
+## `gcongr`
+
+`gcongr` (generalized congruence) applies congruence lemmas tagged with `@[gcongr]` to prove goals of the form `f a ≤ f b`, `f a < f b`, or `f a = f b` from hypotheses `a ≤ b`, `a < b`. It handles arithmetic operations, `min`, `max`, and many order-theoretic constructions.
+
+```lean
+-- Prove a sum inequality from componentwise inequalities
+example (a b c d : ℝ) (hab : a ≤ b) (hcd : c ≤ d) : a + c ≤ b + d := by
+  gcongr
+
+-- Prove a product inequality
+example (a b : ℝ) (ha : 0 ≤ a) (hab : a ≤ b) : a ^ 2 ≤ a * b := by
+  gcongr
+
+-- gcongr can split composite inequality goals
+example (a b c : ℝ) (h1 : a ≤ b) (h2 : 0 ≤ c) : a * c ≤ b * c := by
+  gcongr
+
+-- Provide explicit wildcards with _ for remaining subgoals
+example (n : ℕ) (h : n ≤ 10) : 2 * n ≤ 20 := by
+  gcongr
+```
+
+<Note>
+`gcongr` generates side goals for the positivity/nonnegativity conditions it cannot discharge automatically. Remaining goals are typically closed by `linarith`, `positivity`, or `norm_num`.
+</Note>
+
+---
+
+## `ring_nf` (as a simplification tactic)
+
+While `ring_nf` is primarily covered in the [Arithmetic Tactics](/tactics/arithmetic) page, it plays a role in simplification workflows as well. After `simp` or `push_cast`, expressions may be left in a non-normal ring form. `ring_nf` normalizes them:
+
+```lean
+-- Combine with push_cast to normalize cast+ring expressions
+example (n : ℕ) : (n : ℝ) ^ 2 + 2 * n + 1 = (n + 1) ^ 2 := by
+  push_cast
+  ring
+
+-- Use ring_nf to simplify a subterm before linarith
+example (a b c : ℝ) (h : a ^ 2 + 2 * a * b + b ^ 2 ≤ c) : (a + b) ^ 2 ≤ c := by
+  ring_nf
+  linarith [h]
+```

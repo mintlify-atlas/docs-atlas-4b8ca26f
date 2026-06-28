@@ -1,0 +1,185 @@
+---
+title: "Mathlib4 Module Hierarchy and Import Structure"
+sidebarTitle: "Modules"
+description: "How Mathlib4 organizes its 8000+ modules across 33 top-level directories, how to use selective imports, and how to find theorems in the library."
+---
+
+Mathlib4 is structured as a collection of more than 8,000 individual Lean 4 modules, each corresponding to a single `.lean` source file. These modules are organized into 33 top-level directories under the `Mathlib/` folder, and every module is re-exported from the single root file `Mathlib.lean`. Understanding this hierarchy helps you import only what your project needs, keeps build times fast, and makes it easier to locate specific definitions and theorems in the library.
+
+## How the Module System Works
+
+In Lean 4, every `.lean` file defines a module whose name matches its file path relative to the package root. For example, the file `Mathlib/Algebra/Group/Defs.lean` corresponds to the module `Mathlib.Algebra.Group.Defs`. Modules explicitly list their dependencies at the top of the file using `import` statements.
+
+The top-level `Mathlib.lean` file imports every module in the library via a flat list of `public import` directives:
+
+```lean
+-- Mathlib.lean (excerpt)
+module  -- shake: keep-all --deprecated_module: ignore
+
+public import Std
+public import Batteries
+public import Mathlib.Algebra.AddConstMap.Basic
+public import Mathlib.Algebra.AddConstMap.Equiv
+-- ... 8000+ further imports
+```
+
+When you write `import Mathlib` in your project, you pull in everything. For faster compilation and a smaller dependency footprint, prefer **selective imports**.
+
+## Selective Imports
+
+Instead of importing the entire library, you can import only the modules you actually use:
+
+```lean
+-- Import just the basic group definitions
+import Mathlib.Algebra.Group.Defs
+
+-- Import ring theory basics
+import Mathlib.RingTheory.Ideal.Basic
+
+-- Import real analysis essentials
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+```
+
+<Tip>
+  Selective imports dramatically reduce incremental build times during development. Start with a specific import and broaden it only if the elaborator cannot find the declarations you need.
+</Tip>
+
+<Note>
+  If you are unsure which module contains a particular declaration, use the `exact?` or `apply?` tactics inside a proof, or search the [online documentation](https://leanprover-community.github.io/mathlib4_docs/) by name.
+</Note>
+
+## Top-Level Directories
+
+The 33 top-level directories in `Mathlib/` each group a coherent area of mathematics or infrastructure. The table below describes what each one contains.
+
+<CardGroup cols={2}>
+  <Card title="Algebra" icon="function">
+    Algebraic structures: groups, rings, fields, modules, and algebras. Includes monoids, semirings, ordered algebraic types, and the `BigOperators` notation for ∑ and ∏.
+  </Card>
+  <Card title="AlgebraicGeometry" icon="chart-scatter">
+    Schemes, sheaves of rings, morphisms of varieties, and the foundations of modern algebraic geometry following Grothendieck's language.
+  </Card>
+  <Card title="AlgebraicTopology" icon="circle-nodes">
+    Simplicial sets and simplicial complexes, homology, the singular simplicial set of a topological space, and related constructions.
+  </Card>
+  <Card title="Analysis" icon="wave-sine">
+    Real and complex analysis, measure theory, functional analysis, normed spaces, inner product spaces, and special functions such as `exp`, `log`, and trigonometric functions.
+  </Card>
+  <Card title="CategoryTheory" icon="diagram-project">
+    Categories, functors, natural transformations, adjunctions, limits and colimits, Yoneda lemma, abelian categories, and sheaves in categorical language.
+  </Card>
+  <Card title="Combinatorics" icon="grid">
+    Graph theory, enumerative combinatorics, Ramsey theory, Young tableaux, and related discrete mathematics.
+  </Card>
+  <Card title="Computability" icon="microchip">
+    Turing machines, the halting problem, computability theory, and formal language theory.
+  </Card>
+  <Card title="Condensed" icon="layer-group">
+    Condensed mathematics in the style of Clausen–Scholze: condensed sets, condensed abelian groups, and their basic properties.
+  </Card>
+  <Card title="Control" icon="sliders">
+    Monad transformer infrastructure: `StateT`, `ReaderT`, `WriterT`, and related abstractions used throughout the Lean 4 metaprogramming layer.
+  </Card>
+  <Card title="Data" icon="database">
+    Standard data structures: lists, finsets, multisets, arrays, trees, `Finsupp` (finitely supported functions), and arithmetic on `Nat`, `Int`, `Rat`, and `ZMod`.
+  </Card>
+  <Card title="Dynamics" icon="arrows-spin">
+    Topological dynamics: fixed points, minimal systems, and ergodic-theoretic foundations.
+  </Card>
+  <Card title="FieldTheory" icon="subscript">
+    Galois theory, algebraic closures, field extensions, separability, splitting fields, and finite fields.
+  </Card>
+  <Card title="Geometry" icon="compass-drafting">
+    Euclidean geometry (distances, angles, triangles) and differential geometry (manifolds, tangent bundles, vector fields).
+  </Card>
+  <Card title="GroupTheory" icon="people-group">
+    Group theory beyond the basic `Algebra` hierarchy: free groups, group actions, Sylow theory, solvable groups, and presentations.
+  </Card>
+  <Card title="InformationTheory" icon="signal">
+    Shannon entropy, Kullback–Leibler divergence, mutual information, and the basics of coding theory.
+  </Card>
+  <Card title="LinearAlgebra" icon="table">
+    Linear maps, matrices, determinants, eigenvalues, bilinear forms, the rank–nullity theorem, tensor products, and exterior algebras.
+  </Card>
+  <Card title="Logic" icon="code-branch">
+    Propositional and first-order logic foundations, relational structures, and the interface between type theory and classical logic.
+  </Card>
+  <Card title="MeasureTheory" icon="chart-area">
+    σ-algebras, measures, Lebesgue integration, `L^p` spaces, Radon–Nikodym theorem, and the foundations of probability via measure theory.
+  </Card>
+  <Card title="ModelTheory" icon="book-open">
+    First-order model theory: languages, structures, theories, completeness, and Löwenheim–Skolem theorems.
+  </Card>
+  <Card title="NumberTheory" icon="hashtag">
+    Primes, Diophantine equations, modular arithmetic, Dirichlet characters, L-functions, and arithmetic in number fields.
+  </Card>
+  <Card title="Order" icon="arrow-up-1-9">
+    Partially ordered sets, lattices, complete lattices, Galois connections, filters, and order-theoretic topology.
+  </Card>
+  <Card title="Probability" icon="dice">
+    Probability spaces, random variables, distributions, independence, conditional expectation, and limit theorems.
+  </Card>
+  <Card title="RepresentationTheory" icon="masks-theater">
+    Group representations over fields, characters, Schur's lemma, and the representation ring.
+  </Card>
+  <Card title="RingTheory" icon="ring">
+    Advanced ring theory: UFDs, PIDs, Noetherian rings, Dedekind domains, Witt vectors, and localization.
+  </Card>
+  <Card title="SetTheory" icon="circle-dot">
+    Set theory foundations, ordinals, cardinals, cofinality, and cardinal arithmetic.
+  </Card>
+  <Card title="Tactic" icon="wand-magic-sparkles">
+    Proof automation tactics: `ring`, `linarith`, `norm_num`, `positivity`, `polyrith`, `decide`, and helpers for writing custom tactics.
+  </Card>
+  <Card title="Topology" icon="network-wired">
+    Topological spaces, continuous maps, metric spaces, uniform spaces, filters, compactness, and connectedness.
+  </Card>
+  <Card title="Util" icon="screwdriver-wrench">
+    Shared internal utilities: reflection helpers, attribute infrastructure, and miscellaneous lemmas used across Mathlib itself.
+  </Card>
+</CardGroup>
+
+## Finding a Specific Theorem
+
+If you know what you are looking for conceptually but not which module it lives in, several tools can help.
+
+<Accordion title="Interactive tactics inside a proof">
+  When you have a goal open in a Lean 4 proof state, these tactics search the library for applicable lemmas:
+
+  ```lean
+  -- Suggests exact lemmas that close the goal
+  exact?
+
+  -- Suggests lemmas that can be applied to make progress
+  apply?
+
+  -- Searches for a simp lemma that rewrites the goal
+  simp?
+
+  -- Runs a general proof-search strategy
+  search_proof_tactic
+  ```
+</Accordion>
+
+<Accordion title="Online documentation search">
+  The Mathlib docs site at [leanprover-community.github.io/mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs/) provides:
+
+  - Full-text search by declaration name or statement
+  - Module-level browsing: click any namespace to see its contents
+  - Source links: every declaration links back to the `.lean` file on GitHub
+</Accordion>
+
+<Accordion title="Loogle and Moogle semantic search">
+  - **Loogle** at [loogle.lean-lang.org](https://loogle.lean-lang.org/) lets you search by type signature pattern, e.g. `(?a + ?b) * ?c = ?a * ?c + ?b * ?c`.
+  - **Moogle** at [moogle.ai](https://www.moogle.ai/) supports natural-language queries such as "commutativity of addition in a ring".
+  - Both are also available as Lean tactics via `LeanSearchClient`:
+
+  ```lean
+  import Mathlib.Tactic.Loogle
+  #check @?   -- hover a declaration to reveal its full name
+  ```
+</Accordion>
+
+<Tip>
+  The `#check`, `#where`, and `#print` commands are invaluable when navigating the module tree in VS Code with the Lean 4 extension. Hover over any identifier to see its type and the module where it is defined.
+</Tip>

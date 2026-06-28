@@ -1,0 +1,242 @@
+---
+title: "Automation Tactics in Mathlib: aesop, positivity, fun_prop"
+sidebarTitle: "Automation"
+description: "Reference for Mathlib's automation tactics — decide, native_decide, tauto, aesop, positivity, continuity, fun_prop, and measurability — with examples."
+---
+
+Beyond arithmetic and simplification, Mathlib offers a collection of automation tactics that can close whole classes of goals with minimal user input. These range from complete decision procedures for finite computations (`decide`, `native_decide`) through propositional logic solvers (`tauto`) and general proof search (`aesop`) to domain-specific provers for positivity, continuity, measurability, and other function properties. Knowing which tool fits a given goal can make the difference between a one-line proof and a lengthy manual argument.
+
+## `decide` and `native_decide`
+
+`decide` proves any goal whose type is a `Decidable` proposition by running the kernel's evaluator on the decision procedure. It is complete for decidable goals but can be very slow for large computations because the Lean kernel performs each reduction step in the type theory.
+
+`native_decide` works identically but compiles the decision procedure to native code before running it. This makes it orders of magnitude faster for computationally intensive goals, such as primality tests or large finite-set membership checks.
+
+<Tabs>
+  <Tab title="Basic decide">
+```lean
+example : 2 + 2 = 4 := by decide
+
+example : ¬ (3 = 5) := by decide
+
+-- Works on finite types and decidable predicates
+example : ∀ b : Bool, b || true = true := by decide
+
+example : (10 : Fin 100).val < 50 := by decide
+```
+  </Tab>
+  <Tab title="native_decide">
+```lean
+-- Much faster for computationally heavy goals
+example : Nat.Prime 1009 := by native_decide
+
+example : Nat.Prime 65537 := by native_decide
+
+-- Large list membership
+example : 17 ∈ ([3, 7, 11, 17, 23] : List ℕ) := by native_decide
+```
+  </Tab>
+</Tabs>
+
+<Warning>
+`native_decide` generates a proof that invokes compiled native code, which is **not** checked by the Lean kernel. It is trusted the same way `sorry` is not — the proof is accepted, but correctness depends on the native compiler and runtime being trustworthy. Use it only when `decide` is too slow and the goal is clearly decidable.
+</Warning>
+
+---
+
+## `tauto`
+
+`tauto` (also written `itauto` for the intuitionistic version) proves propositional tautologies in classical logic. It handles goals built from `∧`, `∨`, `→`, `¬`, `↔`, `True`, and `False` by exhaustive case analysis.
+
+```lean
+example (p q : Prop) : p ∧ q → q ∧ p := by tauto
+
+example (p q r : Prop) : (p → q) → (q → r) → p → r := by tauto
+
+example (p : Prop) : p ∨ ¬ p := by tauto
+
+-- tauto handles longer tautologies automatically
+example (a b c d : Prop) : ((a → b) ∧ (c → d)) → (a ∨ c) → (b ∨ d) := by tauto
+```
+
+<Note>
+`tauto` works on propositional goals only — it does not understand quantifiers or arithmetic. For goals mixing logic and arithmetic, use `aesop` or a manual decomposition.
+</Note>
+
+---
+
+## `aesop`
+
+`aesop` is Mathlib's general-purpose proof search tactic. It combines forward reasoning, backward chaining, and `simp`-based normalization to explore a search tree of possible proof steps. It is extensible: users and library authors can tag lemmas with `@[aesop]` to register them as search rules.
+
+```lean
+-- aesop can close many structural goals
+example (s t : Set α) (h : s ⊆ t) (x : α) (hx : x ∈ s) : x ∈ t := by
+  aesop
+
+-- Works well on goals involving membership, subsets, and basic logic
+example (p q : Prop) (hp : p) (hq : q) : p ∧ q := by aesop
+
+-- aesop? prints the proof it found
+example (h : α → β) (ha : α) : β := by aesop
+```
+
+<Accordion title="Customizing aesop with @[aesop]">
+You can register your own lemmas as `aesop` rules using the `@[aesop]` attribute:
+
+```lean
+-- Register as a forward rule (apply when preconditions are met)
+@[aesop forward]
+theorem myLemma (h : P x) : Q x := ...
+
+-- Register as a safe rule (always apply without branching)
+@[aesop safe apply]
+theorem trivialStep : P → P := id
+
+-- Register as a norm rule (used for normalization, like simp)
+@[aesop norm simp]
+theorem mySimp : f (g x) = x := ...
+```
+
+See the `Mathlib.Tactic.Aesop` documentation for the full rule syntax.
+</Accordion>
+
+<Tip>
+`aesop` is best used when other tactics don't quite apply and the goal has a structural feel. For purely arithmetic goals, prefer `linarith`, `omega`, or `norm_num`. For goals involving coercions, use `norm_cast` first.
+</Tip>
+
+---
+
+## `positivity`
+
+`positivity` proves goals of the form `0 ≤ e`, `0 < e`, or `e ≠ 0` by decomposing the expression `e` and applying positivity/nonnegativity lemmas for each operation. It understands:
+
+- Arithmetic: `+`, `*`, `^`, `/`, `|·|` (absolute value)
+- Special functions: `Real.sqrt`, `n !` (factorial), `Nat.choose`
+- Sums and products: `∑`, `∏`
+- Conditional expressions: `ite`, `max`, `min`
+
+```lean
+example (x : ℝ) : 0 ≤ x ^ 2 := by positivity
+
+example (n : ℕ) : 0 < n.factorial := by positivity
+
+example (x y : ℝ) (hx : 0 < x) (hy : 0 < y) : 0 < x * y := by positivity
+
+example (x : ℝ) : 0 ≤ |x| := by positivity
+
+-- Works on sums and products when each term is nonneg
+example (f : ℕ → ℝ) (hf : ∀ i, 0 ≤ f i) (s : Finset ℕ) :
+    0 ≤ ∑ i ∈ s, f i := by positivity
+```
+
+<Tabs>
+  <Tab title="Positivity extensions">
+```lean
+-- positivity handles Real.sqrt
+example (x : ℝ) : 0 ≤ Real.sqrt x := by positivity
+
+-- positivity handles NNReal and ENNReal
+example (x : ℝ≥0) : (0 : ℝ≥0) ≤ x := by positivity
+
+-- positivity handles norms
+example (v : EuclideanSpace ℝ (Fin 3)) : 0 ≤ ‖v‖ := by positivity
+```
+  </Tab>
+  <Tab title="With hypotheses">
+```lean
+-- positivity uses local hypotheses for compound expressions
+example (a b : ℝ) (ha : 0 < a) (hb : 0 ≤ b) : 0 ≤ a * b + a ^ 2 := by
+  positivity
+
+example (n : ℕ) (hn : n > 0) : 0 < (n : ℝ) := by
+  exact_mod_cast hn
+```
+  </Tab>
+</Tabs>
+
+<Note>
+`positivity` is extensible via the `@[positivity]` attribute. Mathlib uses this to teach it about `Real.sqrt`, `Nat.factorial`, `abs`, and many other functions. You can write your own `positivity` extensions for custom operations.
+</Note>
+
+---
+
+## `continuity`
+
+`continuity` proves goals of the form `Continuous f`, `ContinuousAt f x`, or `ContinuousOn f s` by composing continuity lemmas. It works by breaking down the function into primitive components (arithmetic operations, polynomials, standard functions) and applying the corresponding lemmas.
+
+```lean
+example : Continuous (fun x : ℝ => x ^ 2 + 1) := by continuity
+
+example : Continuous (fun x : ℝ => Real.exp x + Real.sin x) := by continuity
+
+example : ContinuousOn (fun x : ℝ => 1 / x) {x | x ≠ 0} := by
+  apply ContinuousOn.div continuousOn_const continuousOn_id
+  intro x hx
+  exact hx
+```
+
+<Warning>
+`continuity` has largely been superseded by `fun_prop` in recent Mathlib. For new code, prefer `fun_prop`, which handles continuity as one of several function properties and is more extensible.
+</Warning>
+
+---
+
+## `fun_prop`
+
+`fun_prop` is the general-purpose tactic for proving function property goals. It subsumes `continuity` and `measurability` and can prove goals about:
+
+- `Continuous`, `ContinuousAt`, `ContinuousOn`
+- `Measurable`, `MeasurableSet`, `AEMeasurable`
+- `Differentiable`, `DifferentiableAt`, `DifferentiableOn`
+- `HasFDerivAt`, `HasDerivAt`
+- `Integrable`, `AEStronglyMeasurable`
+- Any property registered with `@[fun_prop]`
+
+```lean
+example : Continuous (fun x : ℝ => x ^ 2 + Real.exp x) := by fun_prop
+
+example : Measurable (fun x : ℝ => x + 1) := by fun_prop
+
+example : Differentiable ℝ (fun x : ℝ => x ^ 3 - 2 * x) := by fun_prop
+
+-- fun_prop handles compositions automatically
+example : Continuous (fun x : ℝ => Real.sin (x ^ 2 + 1)) := by fun_prop
+```
+
+<Accordion title="Registering custom function properties with fun_prop">
+To make `fun_prop` aware of a new property `MyProp`, register it with the `@[fun_prop]` attribute:
+
+```lean
+-- Mark the property type as a fun_prop target
+attribute [fun_prop] MyProp
+
+-- Register lemmas for specific operations
+@[fun_prop]
+theorem myProp_add (hf : MyProp f) (hg : MyProp g) : MyProp (fun x => f x + g x) := ...
+
+@[fun_prop]
+theorem myProp_comp (hf : MyProp f) (hg : MyProp g) : MyProp (f ∘ g) := ...
+```
+</Accordion>
+
+<Tip>
+When `fun_prop` fails, it may output a trace showing which subgoal it got stuck on. Enable tracing with `set_option trace.Meta.Tactic.fun_prop true` to diagnose the issue.
+</Tip>
+
+---
+
+## `measurability`
+
+`measurability` proves `Measurable f` and `MeasurableSet s` goals by composing measurability lemmas. Like `continuity`, it has been largely superseded by `fun_prop`, but it remains available and still works for many standard goals.
+
+```lean
+example : Measurable (fun x : ℝ => x + 1) := by measurability
+
+example : MeasurableSet {x : ℝ | x > 0} := by measurability
+
+example (f g : ℝ → ℝ) (hf : Measurable f) (hg : Measurable g) :
+    Measurable (fun x => f x + g x) := by measurability
+```
+
+For complex measurability goals, especially those involving integrals or advanced measure theory, `fun_prop` is the preferred tactic in current Mathlib.

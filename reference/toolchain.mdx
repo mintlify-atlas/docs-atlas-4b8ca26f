@@ -1,0 +1,189 @@
+---
+title: "Lean 4 Toolchain Management in Mathlib4"
+sidebarTitle: "Toolchain"
+description: "How Mathlib4 pins its Lean 4 toolchain version, why version locking matters, and how downstream projects should copy and manage the lean-toolchain file."
+---
+
+Mathlib4 is developed against a single, precisely pinned version of the Lean 4 compiler and runtime. That version is recorded in a plain-text file called `lean-toolchain` at the root of the repository. The `elan` version manager reads this file automatically whenever you run any Lean or Lake command inside the directory, downloads the correct compiler if it is not already cached, and routes all subsequent commands through it. Getting this toolchain management right is essential for reproducible builds and smooth collaboration — both within Mathlib itself and in any downstream project that depends on it.
+
+## The lean-toolchain File
+
+The `lean-toolchain` file contains a single line identifying the toolchain:
+
+```text
+leanprover/lean4:v4.32.0-rc1
+```
+
+The format is `<GitHub organization>/<repository>:<release tag>`. The `leanprover/lean4` prefix identifies the official Lean 4 repository; the tag `v4.32.0-rc1` pins the exact release. When `elan` encounters this file it:
+
+1. Checks whether the named toolchain is already installed locally.
+2. If not, downloads and installs it from the Lean 4 GitHub releases.
+3. Runs all `lean`, `lake`, and related executables through that version for the duration of the session.
+
+No manual version switching is needed. As long as `elan` is installed and the `lean-toolchain` file is present, the correct Lean version is used automatically.
+
+## Why Pinning Matters
+
+Lean 4 is under active development. The compiler, standard library APIs, elaboration behavior, and tactic interfaces can all change between releases — sometimes in breaking ways. Mathlib's 8,000+ files depend on precise elaboration behavior and on specific APIs being present. A single unconstrained toolchain upgrade can cause hundreds or thousands of files to fail to compile until the necessary adaptations are made.
+
+<Warning>
+  Mathlib supports **one toolchain at a time**. There is no stable compatibility layer between Lean releases. When the toolchain is bumped, every file in the library is reviewed and updated before the new version is merged into `master`.
+</Warning>
+
+By pinning the toolchain in `lean-toolchain`, Mathlib guarantees:
+
+- **Reproducibility** — any contributor with `elan` installed gets the same build.
+- **Compatibility** — CI, local development, and cached `.olean` files all correspond to the same compiler binary.
+- **Safety** — downstream projects that copy the `lean-toolchain` file know they are using a version that Mathlib has tested.
+
+## The fixedToolchain Setting
+
+The `lakefile.lean` records an additional lock at the Lake level:
+
+```lean
+package mathlib where
+  -- A version of Mathlib only supports the toolchain it is built with.
+  fixedToolchain := true
+```
+
+This setting instructs Lake to refuse to build the package with any toolchain other than the one in `lean-toolchain`. The corresponding field appears in `lake-manifest.json` as well:
+
+```json
+{
+  "name": "mathlib",
+  "fixedToolchain": true
+}
+```
+
+If you try to run `lake build` against Mathlib with a different `elan` default toolchain, Lake will print an error before attempting any compilation, making the mismatch immediately visible.
+
+## How elan Uses the Toolchain File
+
+`elan` is the Lean version manager, analogous to `rustup` for Rust. It intercepts calls to `lean` and `lake` executables and dispatches them to the appropriate versioned installation.
+
+<Steps>
+  <Step title="Install elan">
+    ```bash
+    curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+    ```
+    After installation, `elan`, `lean`, and `lake` are all on your `PATH`.
+  </Step>
+  <Step title="Clone Mathlib (or your downstream project)">
+    ```bash
+    git clone https://github.com/leanprover-community/mathlib4
+    cd mathlib4
+    ```
+    The `lean-toolchain` file is already present in the repository.
+  </Step>
+  <Step title="elan auto-detects the toolchain">
+    Running any Lean or Lake command in the directory automatically triggers toolchain resolution:
+    ```bash
+    lean --version
+    # elan reads lean-toolchain, downloads leanprover/lean4:v4.32.0-rc1 if needed
+    # outputs: Lean (version 4.32.0-rc1, ...)
+    ```
+  </Step>
+  <Step title="Fetch precompiled oleans">
+    ```bash
+    lake exe cache get
+    ```
+    This downloads `.olean` files that were compiled on Mathlib's CI servers with the exact same toolchain, avoiding a full local rebuild.
+  </Step>
+</Steps>
+
+## The post_update Hook
+
+Mathlib's `lakefile.lean` defines a `post_update` hook that runs automatically when a downstream project updates its dependencies with `lake update`. The hook copies the correct `lean-toolchain` version to the downstream project and fetches the cached `.olean` files:
+
+```lean
+post_update pkg do
+  let rootPkg ← getRootPackage
+  if rootPkg.baseName = pkg.baseName then
+    return -- do not run in Mathlib itself
+  if (← IO.getEnv "MATHLIB_NO_CACHE_ON_UPDATE") != some "1" then
+    -- Compare the running Lake's Lean version against the pinned toolchain
+    let toolchainFile := rootPkg.dir / "lean-toolchain"
+    let toolchainContent ← IO.FS.readFile toolchainFile
+    let toolchainVersion := match toolchainContent.trimAscii.copy.splitOn ":" with
+      | [_, version] => version
+      | _ => toolchainContent.trimAscii.copy
+    let toolchainVersion := (toolchainVersion.dropPrefix "v").copy
+    if Lean.versionString ≠ toolchainVersion then
+      IO.println s!"Not running `lake exe cache get` yet, as \
+        the `lake` version ({Lean.versionString}) does not match \
+        the toolchain version ({toolchainVersion}) in the project.\n\
+        You should run `lake exe cache get` manually."
+      return
+    let exeFile ← runBuild cache.fetch
+    let cwd ← IO.Process.getCurrentDir
+    let exitCode ← try
+      IO.Process.setCurrentDir rootPkg.dir
+      env exeFile.toString #["get"]
+    finally
+      IO.Process.setCurrentDir cwd
+    if exitCode ≠ 0 then
+      error s!"{pkg.baseName}: failed to fetch cache"
+```
+
+The key logic is the `Lean.versionString ≠ toolchainVersion` check. `Lean.versionString` is the version of the `lake` binary currently executing the script (e.g. `"4.32.0-rc1"`), while `toolchainVersion` is parsed from the `lean-toolchain` file (stripping the leading `v`). If they differ, the hook prints an informative message and exits without fetching the cache, because the cached `.olean` files were compiled with a different compiler and would be unusable.
+
+<Note>
+  The `MATHLIB_NO_CACHE_ON_UPDATE=1` environment variable suppresses the cache fetch entirely. This is useful in CI environments where the cache step is managed separately.
+</Note>
+
+## Downstream Projects: Copying the Toolchain File
+
+When your project depends on Mathlib, it must use the same Lean version. The recommended approach is to copy Mathlib's `lean-toolchain` file into your project root and commit it:
+
+```bash
+# After running lake update (which creates .lake/packages/mathlib/)
+cp .lake/packages/mathlib/lean-toolchain ./lean-toolchain
+git add lean-toolchain
+git commit -m "chore: update lean-toolchain to match Mathlib"
+```
+
+<Tip>
+  The `post_update` hook does this copying automatically when `lake update` is run and the version matches, so in practice you rarely need to do it manually.
+</Tip>
+
+If your `lean-toolchain` is out of sync with Mathlib's, you will encounter errors when Lean tries to elaborate Mathlib imports. The cached `.olean` files are also tied to the compiler version, so a mismatched toolchain forces a full recompile of Mathlib from source — which can take many hours.
+
+## Updating the Toolchain
+
+Mathlib's toolchain is bumped by the maintainer team following a deliberate process:
+
+<Steps>
+  <Step title="A new Lean release is published">
+    The Lean core team tags a new release (e.g. `v4.33.0`) or a release candidate on GitHub.
+  </Step>
+  <Step title="Nightly testing branch catches issues early">
+    Mathlib maintains a `nightly-testing` branch that is continuously tested against the latest nightly Lean builds. Compilation failures on nightly are labelled and tracked before the stable release arrives, reducing the adaptation effort.
+  </Step>
+  <Step title="Adaptation PRs are merged">
+    Contributors file PRs to fix any files broken by upstream changes. Source files that required non-trivial changes due to upstream Lean behavior include an `adaptation_note` comment explaining what changed and why:
+
+    ```lean
+    -- adaptation_note: In Lean 4.32 the elaboration of `fun` changed to ...
+    ```
+  </Step>
+  <Step title="The lean-toolchain file is updated">
+    The maintainer opens a PR that changes `lean-toolchain` to the new version:
+
+    ```text
+    leanprover/lean4:v4.33.0
+    ```
+
+    CI validates that all 8,000+ files compile cleanly, then the PR is merged into `master`.
+  </Step>
+  <Step title="The cache is rebuilt and published">
+    The CI system rebuilds all `.olean` files with the new toolchain and publishes them to the cache server so downstream users can run `lake exe cache get` immediately.
+  </Step>
+</Steps>
+
+## Nightly Testing
+
+Mathlib's nightly testing workflow runs on a dedicated branch and automatically opens issues or PRs when the latest `leanprover/lean4:nightly-*` build breaks Mathlib files. This early-warning system means that by the time a stable release is cut, most incompatibilities are already resolved. The `lake exe nightly-testing-checklist` executable (declared in `lakefile.lean`) reports the current state of the nightly-testing branch:
+
+```bash
+lake exe nightly-testing-checklist
+```

@@ -1,0 +1,180 @@
+---
+title: "Mathlib Mathematics: A Survey of All Domains"
+sidebarTitle: "Overview"
+description: "Survey Mathlib's 8000+ modules organized into 33 top-level mathematical domains, from foundational algebra to algebraic geometry and measure theory."
+---
+
+Mathlib is the comprehensive mathematical library for the Lean 4 theorem prover, maintained by the leanprover-community. It contains formal proofs spanning virtually every area of modern mathematics — from elementary number theory and group theory through measure theory, algebraic geometry, and condensed mathematics. The library is organized as a hierarchy of modules all collected under a single `Mathlib/` directory, with a root `Mathlib.lean` file (8,234 lines) that publicly imports every module, making it possible to access all of Mathlib with a single `import Mathlib`.
+
+## Module Hierarchy
+
+Every Mathlib file lives at a path like `Mathlib/<Domain>/<Subdomain>/<File>.lean` and is accessed via the corresponding dotted module name, e.g. `Mathlib.Algebra.Ring.Basic`. Building a specific file is as straightforward as:
+
+```bash
+lake build Mathlib.Algebra.Group.Defs
+```
+
+The root import file aggregates everything:
+
+```lean
+-- Mathlib.lean (8234 lines)
+import Mathlib.Algebra.AddConstMap.Basic
+import Mathlib.Algebra.Algebra.Basic
+-- ... 8000+ further imports
+```
+
+## The 33 Top-Level Domains
+
+Mathlib's `Mathlib/` directory contains 33 top-level subdirectories, each corresponding to a major branch of mathematics or infrastructure:
+
+<CardGroup cols={2}>
+  <Card title="Algebra" icon="square-root-variable" href="/mathematics/algebra">
+    Groups, rings, fields, modules, algebras, polynomial rings, and Galois theory. The largest single domain in Mathlib.
+  </Card>
+  <Card title="AlgebraicGeometry" icon="chart-scatter" href="/mathematics/algebra">
+    Schemes, presheaved and sheaved spaces, morphisms, and the machinery of modern algebraic geometry.
+  </Card>
+  <Card title="AlgebraicTopology" icon="circle-nodes" href="/mathematics/other-areas">
+    Simplicial sets, chain complexes, and homological constructions bridging topology and algebra.
+  </Card>
+  <Card title="Analysis" icon="wave-sine" href="/mathematics/analysis">
+    Real and complex analysis, calculus, measure theory, functional analysis, and Fourier analysis.
+  </Card>
+  <Card title="CategoryTheory" icon="diagram-project" href="/mathematics/category-theory">
+    Functors, natural transformations, adjunctions, limits, monoidal and abelian categories, and sheaves.
+  </Card>
+  <Card title="Combinatorics" icon="table-cells" href="/mathematics/other-areas">
+    Graph theory, Ramsey theory, additive combinatorics, set families, and enumerative results.
+  </Card>
+  <Card title="Computability" icon="microchip" href="/mathematics/other-areas">
+    Turing machines, computable functions, the halting problem, Rice's theorem, and Turing degrees.
+  </Card>
+  <Card title="Condensed" icon="layer-group" href="/mathematics/other-areas">
+    Condensed sets and condensed modules following Clausen–Scholze's framework.
+  </Card>
+  <Card title="Control" icon="sliders" href="/mathematics/other-areas">
+    Infrastructure for monad transformers and control-flow abstractions used in tactic code.
+  </Card>
+  <Card title="Data" icon="database" href="/mathematics/other-areas">
+    Foundational data structures: lists, arrays, finsets, multisets, hash maps, and trees.
+  </Card>
+  <Card title="Deprecated" icon="triangle-exclamation" href="/mathematics/overview">
+    Legacy modules preserved for backwards compatibility; users should migrate to current replacements.
+  </Card>
+  <Card title="Dynamics" icon="arrows-spin" href="/mathematics/other-areas">
+    Circle dynamics, omega-limit sets, fixed and periodic points, and translation numbers.
+  </Card>
+  <Card title="FieldTheory" icon="atom" href="/mathematics/algebra">
+    Algebraic and transcendental extensions, splitting fields, Galois correspondence, and Abel-Ruffini.
+  </Card>
+  <Card title="Geometry" icon="compass" href="/mathematics/other-areas">
+    Affine and Euclidean geometry, differentiable manifolds, Lie groups, and smooth vector bundles.
+  </Card>
+  <Card title="GroupTheory" icon="people-group" href="/mathematics/algebra">
+    Subgroups, quotient groups, Sylow theorems, free groups, permutation groups, and classification results.
+  </Card>
+  <Card title="InformationTheory" icon="signal" href="/mathematics/other-areas">
+    Entropy, Kullback-Leibler divergence, and information-theoretic inequalities.
+  </Card>
+  <Card title="LinearAlgebra" icon="border-all" href="/mathematics/algebra">
+    Matrices, bases, determinants, eigenvalues, bilinear forms, and the structure theorem for modules over a PID.
+  </Card>
+  <Card title="Logic" icon="code-branch" href="/mathematics/other-areas">
+    Propositional and first-order logic, model theory, and foundational set-theoretic constructions.
+  </Card>
+  <Card title="MeasureTheory" icon="scale-balanced" href="/mathematics/analysis">
+    Sigma-algebras, Lebesgue and Bochner integration, Fubini, and Haar measure.
+  </Card>
+  <Card title="ModelTheory" icon="sitemap" href="/mathematics/other-areas">
+    First-order structures, satisfiability, the compactness theorem, and Löwenheim-Skolem.
+  </Card>
+  <Card title="NumberTheory" icon="hashtag" href="/mathematics/number-theory">
+    Primes, modular arithmetic, p-adic numbers, quadratic reciprocity, and algebraic number fields.
+  </Card>
+  <Card title="Order" icon="arrow-up-wide-short" href="/mathematics/other-areas">
+    Partial orders, lattices, complete lattices, Galois connections, and ordinal arithmetic.
+  </Card>
+  <Card title="Probability" icon="percent" href="/mathematics/other-areas">
+    Probability measures, independence, random variables, martingales, and limit theorems.
+  </Card>
+  <Card title="RepresentationTheory" icon="masks-theater" href="/mathematics/other-areas">
+    Group representations, characters, orthogonality, and finite-dimensional representation categories.
+  </Card>
+  <Card title="RingTheory" icon="ring" href="/mathematics/algebra">
+    Ideals, localizations, Dedekind domains, Witt vectors, and homological ring-theoretic results.
+  </Card>
+  <Card title="SetTheory" icon="circle-dot" href="/mathematics/other-areas">
+    Ordinals, cardinals, aleph/beth numbers, cofinality, and a model of ZFC set theory.
+  </Card>
+  <Card title="Tactic" icon="wand-magic-sparkles" href="/mathematics/overview">
+    The Lean 4 tactic framework: `ring`, `linarith`, `norm_num`, `simp`, `aesop`, and hundreds more.
+  </Card>
+  <Card title="Testing" icon="flask" href="/mathematics/overview">
+    Infrastructure for property-based testing and linting used in Mathlib's CI pipeline.
+  </Card>
+  <Card title="Topology" icon="network-wired" href="/mathematics/topology">
+    Topological spaces, filters, metric spaces, compactness, connectedness, and uniform spaces.
+  </Card>
+  <Card title="Util" icon="toolbox" href="/mathematics/overview">
+    Miscellaneous utilities and helper lemmas used across multiple domains.
+  </Card>
+</CardGroup>
+
+## Mathematical Coverage by Sub-page
+
+<CardGroup cols={2}>
+  <Card title="Algebra" href="/mathematics/algebra">
+    Groups, rings, fields, modules, linear algebra, polynomial rings, and Galois theory.
+  </Card>
+  <Card title="Analysis" href="/mathematics/analysis">
+    Calculus, measure theory, functional analysis, and Fourier transforms.
+  </Card>
+  <Card title="Topology" href="/mathematics/topology">
+    Topological spaces, metric spaces, continuity, compactness, and filters.
+  </Card>
+  <Card title="Number Theory" href="/mathematics/number-theory">
+    Primes, modular arithmetic, p-adic numbers, and algebraic number fields.
+  </Card>
+  <Card title="Category Theory" href="/mathematics/category-theory">
+    Functors, adjunctions, limits, monoidal categories, and sheaves.
+  </Card>
+  <Card title="Other Areas" href="/mathematics/other-areas">
+    Combinatorics, probability, set theory, order theory, and more.
+  </Card>
+</CardGroup>
+
+## Scale and Scope
+
+<Note>
+Mathlib is one of the largest formal mathematics libraries in the world. Its `Mathlib.lean` root file currently contains **8,234 import lines**, each corresponding to a separately compiled module. The total codebase spans hundreds of thousands of lines of Lean 4 source.
+</Note>
+
+Mathlib is actively maintained by a team of over 30 core maintainers and receives contributions from hundreds of mathematicians and computer scientists. The library's coverage includes landmark results such as:
+
+- The **structure theorem for finitely generated abelian groups** (`AddCommGroup.equiv_free_prod_directSum_zmod`)
+- The **Sylow theorems** (`Sylow.exists_subgroup_card_pow_prime`)
+- **Fubini's theorem** and the **dominated convergence theorem** for Bochner integrals
+- The **Hahn-Banach theorem** and **Banach open mapping theorem**
+- **Quadratic reciprocity** (`legendreSym.quadratic_reciprocity`)
+- The **fundamental theorem of algebra** via `Complex.isAlgClosed`
+- The **Galois correspondence** (`IsGalois.intermediateFieldEquivSubgroup`)
+- The **strong law of large numbers** and **central limit theorem**
+
+<Tip>
+To browse all covered theories interactively, visit the [Mathlib overview page](https://leanprover-community.github.io/mathlib-overview.html) or the [auto-generated API docs](https://leanprover-community.github.io/mathlib4_docs/).
+</Tip>
+
+## Using Mathlib
+
+To use Mathlib in your own Lean 4 project, add it as a dependency in your `lakefile.toml` and import what you need:
+
+```lean
+import Mathlib.Algebra.Group.Defs
+import Mathlib.Topology.Basic
+import Mathlib.NumberTheory.Primes
+
+-- Or import everything at once:
+import Mathlib
+```
+
+See the [Installation](/installation) guide for full setup instructions.

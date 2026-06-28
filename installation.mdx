@@ -1,0 +1,146 @@
+---
+title: "Install Lean 4 and Mathlib on Your System"
+sidebarTitle: "Installation"
+description: "Step-by-step guide to installing Lean 4, the Lake build system, and Mathlib on Linux, macOS, or Windows (WSL)."
+---
+
+Before writing your first Lean 4 proof you need three things on your machine: the **`elan` version manager** (which installs and switches Lean toolchains), **Lean 4 itself** (including the Lake build system), and the **VS Code Lean 4 extension** for editor support. The whole process typically takes under ten minutes on a good connection. If you prefer not to install anything locally, a one-click cloud environment is available via GitHub Codespaces or Gitpod.
+
+## Prerequisites
+
+- **Operating system**: Linux (x86\_64 or ARM64), macOS (Intel or Apple Silicon), or Windows via WSL 2.
+- **Internet connection**: elan downloads the Lean toolchain on first use (~200 MB).
+- **Disk space**: ~2 GB for Lean, Lake, and Mathlib's precompiled `.olean` cache.
+- **VS Code** (recommended): [code.visualstudio.com](https://code.visualstudio.com/) — required for the interactive proof-state display.
+
+<Warning>
+  Native Windows (non-WSL) is **not** supported. If you are on Windows, install [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) first, then follow the Linux instructions inside your WSL terminal.
+</Warning>
+
+## Option A: Local Installation (Recommended)
+
+<Steps>
+  <Step title="Install elan (the Lean version manager)">
+    `elan` manages Lean toolchain versions the same way `rustup` manages Rust. Open a terminal and run:
+
+    <CodeGroup>
+      ```bash Linux / macOS
+      curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh
+      ```
+
+      ```bash Windows (WSL 2)
+      # Run inside your WSL 2 terminal (Ubuntu, Debian, etc.)
+      curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh
+      ```
+    </CodeGroup>
+
+    When prompted, accept the default installation path. Then either restart your terminal or run the source command printed by the installer to add `~/.elan/bin` to your `PATH`.
+
+    <Tip>
+      On some Linux distributions you may need `curl` installed first: `sudo apt install curl` (Debian/Ubuntu) or `sudo dnf install curl` (Fedora).
+    </Tip>
+  </Step>
+
+  <Step title="Install the current Lean 4 toolchain">
+    elan installs Lean toolchains on demand. To pre-install the toolchain that Mathlib currently uses, run:
+
+    ```bash
+    elan toolchain install leanprover/lean4:v4.32.0-rc1
+    ```
+
+    This downloads the Lean 4 compiler and the **Lake** build system. You can confirm everything is in place:
+
+    ```bash
+    lean --version
+    # Lean (version 4.32.0-rc1, ...)
+    lake --version
+    # Lake version ...
+    ```
+
+    <Info>
+      The exact version above comes from Mathlib's `lean-toolchain` file (`leanprover/lean4:v4.32.0-rc1`). When you add Mathlib as a project dependency, elan automatically switches to the correct toolchain for that project.
+    </Info>
+  </Step>
+
+  <Step title="Install the VS Code Lean 4 extension">
+    The Lean 4 extension provides the interactive infoview where you see proof states, goal displays, and error messages in real time.
+
+    1. Open VS Code.
+    2. Go to the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+    3. Search for **`lean4`** (publisher: *leanprover*).
+    4. Click **Install**.
+
+    After installation, the extension will automatically invoke elan to download any required toolchain when you open a `.lean` file.
+
+    <Tip>
+      The extension also prompts you to install Lean if elan is not yet on your `PATH`. Restarting VS Code after installing elan is usually sufficient to resolve this.
+    </Tip>
+  </Step>
+
+  <Step title="Verify the installation">
+    Create a minimal file to confirm Lean is working:
+
+    ```bash
+    echo '#check Nat.add_comm' > Hello.lean
+    lean Hello.lean
+    ```
+
+    If Lean prints the type of `Nat.add_comm` without errors, your installation is working. You are now ready to create a project that uses Mathlib.
+
+    ```bash
+    # Expected output (no errors):
+    # Nat.add_comm : ∀ (n m : ℕ), n + m = m + n
+    ```
+  </Step>
+</Steps>
+
+## The `lean-toolchain` File
+
+Every Lean project contains a `lean-toolchain` file in its root directory. This single-line file pins the exact Lean version used by that project. Mathlib's current toolchain is:
+
+```text
+leanprover/lean4:v4.32.0-rc1
+```
+
+When you `cd` into any directory containing a `lean-toolchain` file, elan transparently switches to that toolchain. This means different projects on the same machine can use different Lean versions without conflict. You never need to manually switch toolchains — elan handles it automatically.
+
+## Option B: Cloud Environment (No Installation Required)
+
+If you want to experiment with Mathlib without installing anything locally, both of the following options spin up a fully configured environment in your browser:
+
+<Note>
+  Cloud environments are great for quick experiments, tutorials, and workshops, but local installation is recommended for sustained development — the interactive proof state in VS Code is much more responsive with a local build.
+</Note>
+
+| Platform | How to open |
+|---|---|
+| **GitHub Codespaces** | Click **Open in GitHub Codespaces** on the [mathlib4 repository](https://github.com/leanprover-community/mathlib4) page, or visit [codespaces.new/leanprover-community/mathlib4](https://codespaces.new/leanprover-community/mathlib4). |
+| **Gitpod** | Click **Open in Gitpod** on the repository page, or prefix the GitHub URL: `gitpod.io/#https://github.com/leanprover-community/mathlib4`. |
+
+Both environments pre-install elan, Lean, Lake, VS Code Server, and the Lean 4 extension, and they automatically fetch the Mathlib `.olean` cache so you can start exploring immediately.
+
+## Troubleshooting
+
+<Accordion title="elan is installed but `lean` is not found after restarting the terminal">
+  elan adds `~/.elan/bin` to your shell profile (`.bashrc`, `.zshrc`, etc.) during installation. If the command is still not found, manually add the following line to your profile and restart:
+
+  ```bash
+  export PATH="$HOME/.elan/bin:$PATH"
+  ```
+</Accordion>
+
+<Accordion title="`lean --version` shows the wrong version inside a project directory">
+  This is expected behavior. Inside a directory that contains a `lean-toolchain` file, elan automatically reports the version pinned in that file. Run `lean --version` outside of any project directory to see your globally installed version.
+</Accordion>
+
+<Accordion title="The VS Code extension shows 'Lean is not installed'">
+  Make sure elan is on your `PATH` (see above) and that you have restarted VS Code after installation. The extension invokes `elan` to locate Lean; if elan is not accessible, it cannot find Lean either.
+</Accordion>
+
+<Accordion title="Installation fails on macOS with 'curl: (60) SSL certificate problem'">
+  This usually means your system's certificate store is outdated. Run `brew install ca-certificates` (if you use Homebrew) or update macOS via System Settings → Software Update.
+</Accordion>
+
+## Next Steps
+
+With Lean installed, you are ready to add Mathlib to a project. See the [Using Mathlib as a Dependency](./using-as-dependency) guide to create a new project and import the library.

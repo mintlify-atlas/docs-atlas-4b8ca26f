@@ -1,0 +1,240 @@
+---
+title: "Building and Testing Mathlib4: Lake Commands Reference"
+sidebarTitle: "Building & Testing"
+description: "How to build Mathlib4, fetch precompiled .olean cache, run tests, use the style linter, and generate HTML documentation locally using Lake."
+---
+
+Mathlib4 uses **Lake** — Lean 4's official build system and package manager — for all build, test, and tooling tasks. Because Mathlib is a large library with hundreds of thousands of lines of Lean code, building it from scratch takes several hours on modern hardware. The precompiled `.olean` cache makes iterative development practical by letting you download the artifacts already built by CI. This page is a complete reference for every build and test command you will need as a contributor.
+
+## Prerequisites
+
+- **Lean 4 and `elan`** installed via the [community getting-started guide](https://leanprover-community.github.io/get_started.html). `elan` manages Lean toolchain versions; it automatically activates the correct version when you `cd` into the `mathlib4` directory.
+- **`lake`** — ships with every `elan`-managed Lean installation. No separate installation is needed.
+- **Git** — to clone the repository and manage branches.
+- **GitHub CLI `gh`** (optional) — needed only for the `autolabel` tool.
+
+<Note>
+Run `lean --version` and `lake --version` inside the `mathlib4` directory to confirm you are using the pinned toolchain. If the versions do not match the `lean-toolchain` file, run `elan toolchain install leanprover/lean4:$(cat lean-toolchain | cut -d: -f2)`.
+</Note>
+
+## Standard Build Workflow
+
+<Steps>
+
+### Clone the repository (first-time setup)
+
+```bash
+git clone https://github.com/leanprover-community/mathlib4.git
+cd mathlib4
+```
+
+If you are contributing, clone your fork instead:
+
+```bash
+git clone https://github.com/<your-username>/mathlib4.git
+cd mathlib4
+```
+
+### Fetch the precompiled `.olean` cache
+
+**Always run this first.** Skipping it means the next build step will recompile everything from scratch, which takes hours:
+
+```bash
+lake exe cache get
+```
+
+This downloads `.olean` and `.ilean` files produced by Mathlib's CI pipeline. The cache is keyed to the exact commit hash of your working tree, so you may need to re-run it after rebasing or after pulling upstream changes.
+
+### Build Mathlib
+
+With the cache in place, a full build should complete in a few minutes as Lake only needs to compile files not covered by the cache:
+
+```bash
+lake build
+```
+
+A successful build produces no error output. Warnings may appear but do not indicate failure.
+
+### Build a specific file
+
+To build (and type-check) a single Lean module, pass its dot-separated import path:
+
+```bash
+lake build Mathlib.Algebra.Group.Defs
+lake build Mathlib.Data.List.Basic
+lake build Mathlib.Topology.Basic
+```
+
+This is the fastest way to iterate on a single file during development — you do not need to wait for the full library to build.
+
+### Run the test suite
+
+```bash
+lake test
+```
+
+This runs all tests defined under `MathlibTest/` using the `MathlibTest` test driver declared in `lakefile.lean`. A clean pass is required before opening a PR.
+
+### Run the style linter
+
+```bash
+lake exe lint-style
+```
+
+This executes both the Python-based text linters (from `scripts/lint-style.py`) and the Lean-based style linters. All reported issues must be resolved before requesting review. See the [Style Guide](./style-guide) for the full list of rules being checked.
+
+### Register any new files
+
+If you added a new `.lean` source file to the library, regenerate the top-level `Mathlib.lean` import file so the new module is included in the build:
+
+```bash
+lake exe mk_all
+```
+
+Commit the updated `Mathlib.lean` as part of the same PR as your new file.
+
+</Steps>
+
+## Command Reference
+
+### Fetching and Managing the Cache
+
+| Command | Description |
+|---------|-------------|
+| `lake exe cache get` | Download precompiled `.olean` files for the current commit |
+| `lake exe cache get!` | Force re-download even if local files are present |
+| `lake exe cache` | Print the full cache help menu |
+
+<Tip>
+If a build fails with mysterious errors after a rebase, run `lake clean` followed by `lake exe cache get` to start fresh. This resolves most cases of stale artifacts.
+</Tip>
+
+### Building
+
+| Command | Description |
+|---------|-------------|
+| `lake build` | Build all of Mathlib (fast with cache, slow without) |
+| `lake build Mathlib.X.Y.Z` | Build a specific module and its dependencies |
+| `lake build Archive` | Build the `Archive` library |
+| `lake build Counterexamples` | Build the `Counterexamples` library |
+| `lake clean` | Remove all build artifacts under `.lake/build` |
+
+<Warning>
+`lake clean` deletes all cached build outputs. After running it, you must run `lake exe cache get` again before building, or the next `lake build` will recompile everything from scratch.
+</Warning>
+
+Alternatively, remove the entire `.lake` directory for a fully clean slate:
+
+```bash
+rm -rf .lake
+lake exe cache get
+lake build
+```
+
+### Testing and Linting
+
+| Command | Description |
+|---------|-------------|
+| `lake test` | Run the full Mathlib test suite |
+| `lake exe lint-style` | Run text-based and Lean-based style linters |
+| `lake exe check-yaml` | Verify all declarations referenced in `docs/*.yaml` exist |
+| `lake exe mk_all` | Regenerate `Mathlib.lean` to include all source files |
+| `lake exe autolabel <PR>` | Auto-assign topic labels to a GitHub PR |
+
+### Checking PR Titles
+
+The `check_title_labels` executable validates that a PR title obeys Mathlib's formatting requirements:
+
+```bash
+lake exe check_title_labels
+```
+
+This is run automatically by CI but can be tested locally before opening a PR.
+
+## Cleaning Build Artifacts
+
+Two levels of cleaning are available depending on how thoroughly you want to reset:
+
+```bash
+# Level 1: remove build outputs, keep the cache index
+lake clean
+
+# Level 2: remove everything, including the downloaded cache
+rm -rf .lake
+```
+
+After a Level 2 clean, always re-fetch the cache:
+
+```bash
+lake exe cache get
+```
+
+## Building HTML Documentation Locally
+
+The [mathlib4_docs](https://github.com/leanprover-community/mathlib4_docs) repository is responsible for generating and publishing the official HTML documentation at [leanprover-community.github.io/mathlib4_docs](https://leanprover-community.github.io/mathlib4_docs).
+
+To build the docs locally, clone that repository alongside your `mathlib4` checkout:
+
+```bash
+git clone https://github.com/leanprover-community/mathlib4_docs.git
+cd mathlib4_docs
+cp ../mathlib4/lean-toolchain .
+lake exe cache get
+lake build Mathlib:docs
+```
+
+<Note>
+The final `lake build Mathlib:docs` step can take 20 minutes or more even with the cache. The generated HTML files are placed in `.lake/build/doc/` and can be viewed in any browser.
+</Note>
+
+## Continuous Integration
+
+Mathlib's CI is powered by **GitHub Actions**. The primary workflow is defined in `.github/workflows/build.yml`. Every push to a PR branch triggers:
+
+1. A full `lake build` across Linux runners.
+2. The test suite (`lake test`).
+3. The style linter (`lake exe lint-style`).
+4. The YAML checker (`lake exe check-yaml`).
+
+### Bors Merge Queue
+
+Mathlib does not allow direct pushes to `master`. All merges go through **Bors**, an automated merge bot. When a reviewer approves a PR, they post:
+
+```
+bors r+
+```
+
+Bors batches approved PRs, runs a final CI build, and merges passing batches atomically. This ensures `master` is always in a passing state.
+
+### Downstream Testing
+
+The `DownstreamTest/` directory contains tests that verify Mathlib's compatibility with downstream projects. These are run periodically rather than on every PR, but failures there can block releases.
+
+## Dependency Management
+
+Mathlib's upstream dependencies (Batteries, Aesop, Qq, ProofWidgets, importGraph, LeanSearchClient, plausible) are declared in `lakefile.lean`. To update them:
+
+```bash
+lake update
+```
+
+To update only a subset:
+
+```bash
+lake update batteries aesop
+```
+
+This modifies `lake-manifest.json`. Commit that file and open a PR to land the dependency update.
+
+<Warning>
+Do not run `lake update -Kdoc=on`. Documentation-related dependencies are only included when CI builds documentation, and running that command locally will produce an incorrect `lake-manifest.json`.
+</Warning>
+
+## Gitpod and GitHub Codespaces
+
+If you prefer a browser-based development environment with Lean and Lake pre-installed:
+
+- **GitHub Codespaces**: click the "Open in GitHub Codespaces" badge on the repository homepage.
+- **Gitpod**: click the "Open in Gitpod" badge, or navigate to `gitpod.io/#https://github.com/leanprover-community/mathlib4`.
+
+Both environments run `lake exe cache get` automatically on startup so you can begin editing immediately.

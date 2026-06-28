@@ -1,0 +1,337 @@
+---
+title: "Structural Tactics in Mathlib: ext, use, induction, wlog"
+sidebarTitle: "Structural"
+description: "Guide to Mathlib's structural proof tactics — ext, use, obtain, rcases, induction, wlog, tfae_have, by_contra, and contrapose — with examples."
+---
+
+Structural tactics shape the architecture of a proof: they introduce hypotheses, break compound goals into pieces, provide witnesses for existentials, apply lemmas, and handle classical reasoning. While arithmetic and simplification tactics close goals automatically, structural tactics put you in control of the proof's logical flow. Every Lean 4 proof writer needs a solid command of `apply`, `exact`, `refine`, `obtain`, `rcases`, `induction`, and `ext`, as well as the more specialized tools like `wlog` and `tfae_have`.
+
+## `apply` and `exact`
+
+`apply` closes a goal by applying a term whose conclusion matches the goal, generating subgoals for any premises. `exact` closes a goal completely with a proof term that matches it precisely — it admits no remaining subgoals.
+
+```lean
+-- exact: provide the complete proof term
+example : 1 + 1 = 2 := by exact rfl
+
+-- apply: use a lemma, generating subgoals for its hypotheses
+example (n : ℕ) (h : n > 0) : n ≥ 1 := by
+  apply Nat.one_le_iff_ne_zero.mpr
+  omega
+
+-- Chaining apply calls
+example (a b c : ℕ) (h1 : a ≤ b) (h2 : b ≤ c) : a ≤ c :=
+  Nat.le_trans h1 h2
+```
+
+---
+
+## `refine`
+
+`refine` is a more flexible version of `exact` that allows placeholders (`_` or `?name`) for parts of the term you want to fill in later. It is useful for building up a proof term incrementally.
+
+```lean
+-- Use _ as a placeholder for subgoals
+example (n : ℕ) : ∃ m, m > n := by
+  refine ⟨n + 1, ?_⟩
+  omega
+
+-- Named placeholders produce named goals
+example (a b : Prop) (ha : a) (hb : b) : a ∧ b := by
+  refine ⟨?left, ?right⟩
+  · exact ha
+  · exact hb
+```
+
+---
+
+## `constructor`
+
+`constructor` splits a goal that is a conjunction (`∧`), an iff (`↔`), an existential (`∃`), or any inductive type with exactly one constructor, into its component goals.
+
+```lean
+example (p q : Prop) (hp : p) (hq : q) : p ∧ q := by
+  constructor
+  · exact hp
+  · exact hq
+
+example (n : ℕ) : n = n ↔ True := by
+  constructor
+  · intro; trivial
+  · intro; rfl
+```
+
+---
+
+## `ext`
+
+`ext` applies extensionality lemmas tagged with `@[ext]` to reduce equality of structured objects to equality of their components. It is used for functions (via `funext`), sets (via `Set.ext`), finsets, bundled morphisms, and many other types.
+
+```lean
+-- Extensionality for functions
+example (f g : ℕ → ℕ) (h : ∀ n, f n = g n) : f = g := by
+  ext n
+  exact h n
+
+-- Extensionality for sets
+example (s t : Set ℕ) (h : ∀ n, n ∈ s ↔ n ∈ t) : s = t := by
+  ext n
+  exact h n
+
+-- ext with a specific lemma
+example (f g : α →+ β) (h : ∀ x, f x = g x) : f = g := by
+  ext x
+  exact h x
+```
+
+<Tip>
+You can specify how many variables to introduce with `ext n` (one variable named `n`) or `ext x y` (two variables). Without arguments, `ext` introduces as many as needed.
+</Tip>
+
+---
+
+## `use`
+
+`use` provides witnesses for existential goals (`∃ x, P x`) and the first component of conjunctive goals. After `use t`, the goal `∃ x, P x` becomes `P t`.
+
+```lean
+example : ∃ n : ℕ, n > 5 := by
+  use 6
+  norm_num
+
+-- Provide multiple witnesses at once
+example : ∃ m n : ℕ, m + n = 10 ∧ m > n := by
+  use 7, 3
+  constructor <;> norm_num
+
+-- use with a computed expression
+example (n : ℕ) : ∃ m : ℕ, m > n := by
+  use n + 1
+  omega
+```
+
+---
+
+## `obtain` and `rcases`
+
+`obtain` and `rcases` destructure hypotheses by pattern matching. They are the tactic-mode equivalents of `match` and `fun ⟨a, b⟩ =>` in term mode. Use them to extract components from conjunctions, existentials, disjunctions, and inductive types.
+
+<Tabs>
+  <Tab title="obtain">
+```lean
+-- Destructure an existential
+example (h : ∃ n : ℕ, n > 5 ∧ n < 10) : True := by
+  obtain ⟨n, hn1, hn2⟩ := h
+  trivial
+
+-- Destructure a conjunction directly
+example (h : P ∧ Q ∧ R) : R := by
+  obtain ⟨_, _, hr⟩ := h
+  exact hr
+
+-- Nested patterns
+example (h : ∃ p : ℕ × ℕ, p.1 + p.2 = 5) : True := by
+  obtain ⟨⟨a, b⟩, hab⟩ := h
+  trivial
+```
+  </Tab>
+  <Tab title="rcases">
+```lean
+-- rcases is similar but uses a slightly different syntax
+example (h : ∃ n : ℕ, n > 5) : True := by
+  rcases h with ⟨n, hn⟩
+  trivial
+
+-- rcases handles disjunctions with |
+example (h : P ∨ Q) : Q ∨ P := by
+  rcases h with hp | hq
+  · right; exact hp
+  · left; exact hq
+
+-- Nested rcases
+example (h : (∃ n, n > 0) ∨ False) : ∃ n : ℕ, n > 0 := by
+  rcases h with ⟨n, hn⟩ | hf
+  · exact ⟨n, hn⟩
+  · exact hf.elim
+```
+  </Tab>
+</Tabs>
+
+---
+
+## `cases` and `induction`
+
+`cases` performs case analysis on an inductive type, natural number, boolean, or hypothesis. `induction` performs structural induction and additionally provides an inductive hypothesis.
+
+```lean
+-- cases on a natural number
+example (n : ℕ) : n = 0 ∨ ∃ m, n = m + 1 := by
+  cases n with
+  | zero => left; rfl
+  | succ m => right; exact ⟨m, rfl⟩
+
+-- induction on ℕ
+example (n : ℕ) : 0 + n = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [Nat.add_succ, ih]
+
+-- induction with a more complex type
+example (l : List ℕ) : l.length ≥ 0 := by
+  induction l with
+  | nil => simp
+  | cons h t ih => simp [List.length_cons]; omega
+```
+
+<Note>
+For simple induction on `ℕ` where the goal is arithmetic, `omega` or `linarith` can often finish the step without explicitly writing out the induction. For complex recursive structures, `induction` with explicit case names is clearer.
+</Note>
+
+---
+
+## `by_contra` and `by_cases`
+
+`by_contra h` introduces the negation of the current goal as hypothesis `h` and switches the goal to `False`, enabling proof by contradiction. `by_cases h : P` performs classical case analysis on any proposition `P`, splitting into cases `P` and `¬P`.
+
+```lean
+-- by_contra: proof by contradiction
+example (n : ℕ) (h : n ≠ 0) : n > 0 := by
+  by_contra h'
+  push_neg at h'
+  omega
+
+-- by_cases: classical case split on any proposition
+example (n : ℕ) : n = 0 ∨ n > 0 := by
+  by_cases h : n = 0
+  · left; exact h
+  · right; omega
+```
+
+---
+
+## `contrapose`
+
+`contrapose` replaces a goal `P → Q` (or `P` given `¬Q` in context) with its contrapositive `¬Q → ¬P`. Combined with `push_neg`, this is a standard pattern for proving implications.
+
+```lean
+-- Switch to the contrapositive
+example (n : ℕ) : n ≠ 0 → n > 0 := by
+  contrapose
+  push_neg
+  omega
+
+-- contrapose! = contrapose + push_neg
+example (n : ℕ) : n ≠ 0 → n > 0 := by
+  contrapose!
+  omega
+```
+
+---
+
+## `push_neg`
+
+`push_neg` pushes negations inward through quantifiers and logical connectives. It is fully covered in the [Simplification Tactics](/tactics/simplification#push_neg) page and is often used together with `by_contra` or `contrapose`.
+
+```lean
+example (h : ¬ ∀ x : ℝ, x ^ 2 ≥ 0) : ∃ x : ℝ, x ^ 2 < 0 := by
+  push_neg at h
+  exact h
+```
+
+---
+
+## `wlog`
+
+`wlog` reduces the goal to a canonical case. Given a goal and a hypothesis `h : P`, `wlog h : P` adds `h : P` to the context and generates a second goal asking you to reduce the general case to the case where `P` holds.
+
+```lean
+-- Prove a symmetric statement by WLOG
+example (a b : ℝ) : a * b ≤ (a ^ 2 + b ^ 2) / 2 := by
+  wlog h : a ≤ b
+  · push_neg at h
+    linarith [this b a (le_of_lt h)]
+  nlinarith [sq_nonneg (a - b)]
+```
+
+<Accordion title="wlog syntax and usage patterns">
+The general form is:
+
+```lean
+wlog h : P [using x y]
+```
+
+After `wlog h : P`:
+- The current goal gets hypothesis `h : P` added, and you prove the goal in this simpler case.
+- A second goal is generated: assuming the goal holds when `P` is true, prove it in general.
+
+This is most useful for symmetric goals (like swapping two variables) or for goals where one case implies the other by a simple transformation.
+</Accordion>
+
+---
+
+## `tfae_have` and `tfae_finish`
+
+`tfae_have` and `tfae_finish` prove goals of the form `TFAE [P₁, P₂, ..., Pₙ]` ("The Following Are Equivalent"). You establish individual implications using `tfae_have i → j` and then call `tfae_finish` to assemble them into the full equivalence.
+
+```lean
+-- Prove a TFAE chain
+example (n : ℕ) : TFAE [n = 0, n ≤ 0, ¬ n > 0] := by
+  tfae_have 1 → 2 := by omega
+  tfae_have 2 → 3 := by omega
+  tfae_have 3 → 1 := by omega
+  tfae_finish
+
+-- With sorry placeholders while building the proof
+example (p q r : Prop) : TFAE [p, q, r] := by
+  tfae_have 1 → 2 := fun hp => sorry
+  tfae_have 2 → 3 := fun hq => sorry
+  tfae_have 3 → 1 := fun hr => sorry
+  tfae_finish
+```
+
+<Note>
+`TFAE` requires a Hamiltonian path through the implication graph — you need enough `tfae_have` statements for `tfae_finish` to find a cycle visiting all propositions. For `n` propositions, `n` directed implications suffice if they form a cycle (1→2→3→…→n→1).
+</Note>
+
+---
+
+## Quick Comparison
+
+<CardGroup cols={2}>
+  <Card title="Goal Decomposition" icon="scissors">
+    `constructor` — split conjunctions/iffs into parts
+
+    `cases` — case-split on an inductive type
+
+    `rcases` / `obtain` — pattern-match a hypothesis
+
+    `ext` — reduce equality of structures to components
+  </Card>
+  <Card title="Witness Provision" icon="hand-point-right">
+    `use` — provide a witness for an existential
+
+    `refine` — partially fill a proof term with `_`
+
+    `apply` — apply a lemma, generate subgoals
+
+    `exact` — close goal with a complete proof term
+  </Card>
+  <Card title="Classical Reasoning" icon="balance-scale">
+    `by_contra` — proof by contradiction
+
+    `by_cases` — classical case split on any `Prop`
+
+    `contrapose` — switch to contrapositive
+
+    `push_neg` — push negations inward
+  </Card>
+  <Card title="Advanced Structure" icon="layer-group">
+    `induction` — structural induction
+
+    `wlog` — reduce to canonical case
+
+    `tfae_have` / `tfae_finish` — equivalence chains
+
+    `obtain` — simultaneous destructuring
+  </Card>
+</CardGroup>

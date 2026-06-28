@@ -1,0 +1,259 @@
+---
+title: "Algebra in Mathlib: Groups, Rings, Fields, and Modules"
+sidebarTitle: "Algebra"
+description: "Explore Mathlib's algebraic hierarchy — groups, rings, fields, modules, linear algebra, polynomial rings, Galois theory, and their key theorems."
+---
+
+Mathlib's algebraic coverage is the largest single domain in the library, spread across the `Mathlib/Algebra/`, `Mathlib/GroupTheory/`, `Mathlib/RingTheory/`, `Mathlib/FieldTheory/`, and `Mathlib/LinearAlgebra/` directories. The design follows a carefully layered type-class hierarchy — beginning with the most basic structures like `Monoid` and `Group`, then building through `Ring`, `Field`, and `Module` all the way to advanced constructions like Galois theory and Azumaya algebras. Every theorem is a fully verified Lean 4 proof, and the hierarchy is designed to maximize reuse: a result proved for a general `CommRing` applies automatically to `ℤ`, `ℚ`, `ℝ`, polynomial rings, and any other commutative ring in Mathlib.
+
+## Group Theory
+
+The group-theory hierarchy lives under `Mathlib.GroupTheory` and `Mathlib.Algebra.Group`.
+
+### Core Definitions
+
+```lean
+-- Mathlib.Algebra.Group.Defs
+#check Group          -- A type with a binary op, identity, and inverses
+#check MonoidHom      -- A structure-preserving map between monoids/groups
+#check MulAction      -- An action of a group on a type
+#check Subgroup       -- A subgroup of a group G
+#check Subgroup.Normal  -- Predicate: a subgroup N is normal in G
+```
+
+### Key Theorems
+
+<CardGroup cols={2}>
+  <Card title="Lagrange's Theorem" icon="layer-group">
+    The order of any subgroup divides the order of the group.
+
+    ```lean
+    #check Subgroup.card_subgroup_dvd_card
+    -- H.card ∣ G.card
+    ```
+  </Card>
+  <Card title="First Sylow Theorem" icon="circle-nodes">
+    For every prime-power dividing the group order, a subgroup of that order exists.
+
+    ```lean
+    #check Sylow.exists_subgroup_card_pow_prime
+    -- ∀ p n, p^n ∣ Fintype.card G →
+    --   ∃ H : Subgroup G, Fintype.card H = p^n
+    ```
+  </Card>
+  <Card title="Quotient Group" icon="divide">
+    The quotient `G ⧸ N` inherits a group structure when `N` is normal.
+
+    ```lean
+    #check QuotientGroup.Quotient.group
+    #check QuotientGroup.quotientKerEquivRange
+    -- First isomorphism theorem
+    ```
+  </Card>
+  <Card title="Structure of Fin. Gen. Abelian Groups" icon="table-cells">
+    Every finitely generated abelian group decomposes as a direct sum.
+
+    ```lean
+    #check AddCommGroup.equiv_free_prod_directSum_zmod
+    -- G ≃+ ℤ^r ⊕ (⊕ᵢ ZMod nᵢ)
+    ```
+  </Card>
+</CardGroup>
+
+Additional highlights include the **class equation** (`MulAction.selfEquivSigmaOrbitsQuotientStabilizer`), **Burnside's lemma** (`MulAction.sum_card_fixedBy_eq_card_orbits_mul_card_group`), the **alternating group on ≥5 letters is simple** (`alternatingGroup.isSimpleGroup`), and **free groups** (`FreeGroup`) with presented groups (`PresentedGroup`).
+
+```lean
+-- The three Sylow theorems
+#check Sylow.exists_subgroup_card_pow_prime  -- 1st: existence
+#check Sylow.isPretransitive_of_finite       -- 2nd: conjugacy
+#check card_sylow_modEq_one                 -- 3rd: count ≡ 1 mod p
+```
+
+## Rings, Ideals, and Quotients
+
+The ring hierarchy lives in `Mathlib.Algebra.Ring` and `Mathlib.RingTheory`.
+
+```lean
+-- Mathlib.Algebra.Ring.Basic
+#check Ring       -- Additive abelian group + associative multiplication
+#check CommRing   -- Ring with commutative multiplication
+#check RingHom    -- Ring homomorphism (preserves +, *, 0, 1)
+
+-- Mathlib.RingTheory.Ideal.Basic
+#check Ideal            -- Two-sided ideal of a (commutative) ring
+#check Ideal.IsPrime    -- Prime ideal predicate
+#check Ideal.IsMaximal  -- Maximal ideal predicate
+#check Ideal.Quotient.ring  -- R ⧸ I is a ring
+```
+
+The **Chinese remainder theorem** appears as:
+```lean
+#check Ideal.quotientInfRingEquivPiQuotient
+-- R ⧸ (I₁ ⊓ I₂ ⊓ … ⊓ Iₙ) ≃+* Π i, R ⧸ Iᵢ  (when ideals are pairwise coprime)
+```
+
+<Note>
+Mathlib supports both commutative and non-commutative rings throughout its hierarchy. Many results about ideals and localizations are stated for commutative rings, while module theory works over arbitrary rings.
+</Note>
+
+## Fields and Field Theory
+
+```lean
+-- Mathlib.Algebra.Field.Basic
+#check Field        -- CommRing where every nonzero element is invertible
+#check algebraMap   -- The canonical ring map K →+* A for a K-algebra A
+
+-- Mathlib.FieldTheory.Galois
+#check IsGalois.intermediateFieldEquivSubgroup
+-- Galois correspondence: intermediate fields ↔ subgroups of Gal(L/K)
+
+-- Algebraic closure
+#check IsAlgClosed            -- Predicate: every nonconstant polynomial has a root
+#check AlgebraicClosure       -- Explicit construction of the algebraic closure
+#check Complex.exists_root    -- ℂ is algebraically closed
+```
+
+Field theory highlights:
+
+<Accordion title="Splitting Fields and Galois Theory">
+
+```lean
+-- Every polynomial has a splitting field
+#check Polynomial.SplittingField
+
+-- The Abel-Ruffini theorem (one direction):
+-- the Galois group of a general degree-n polynomial (n ≥ 5) is not solvable
+#check isSolvable_gal_minpoly
+
+-- Frobenius endomorphism in characteristic p
+#check frobenius
+
+-- Perfect closure
+#check PerfectClosure
+```
+
+</Accordion>
+
+<Accordion title="Algebraic Extensions">
+
+```lean
+-- Algebraic extension predicate
+#check Algebra.IsAlgebraic
+
+-- Adjoin a root of an irreducible polynomial
+#check AdjoinRoot
+
+-- Rupture field / simple extension
+#check IntermediateField.adjoin
+```
+
+</Accordion>
+
+## Modules and Algebras
+
+```lean
+-- Module over a ring R
+#check Module      -- R-module structure on an abelian group M
+#check LinearMap   -- R-linear map M →ₗ[R] N
+
+-- Algebra over a commutative ring
+#check Algebra     -- An R-algebra A (ring map R →+* A in the center)
+#check AlgHom      -- Algebra homomorphism A →ₐ[R] B
+
+-- Important constructions
+#check TensorProduct    -- M ⊗[R] N
+#check TensorAlgebra    -- Free (non-commutative) algebra over M
+#check ExteriorAlgebra  -- ⋀[R] M, exterior (Grassmann) algebra
+#check CliffordAlgebra  -- Clifford algebra associated to a quadratic form
+#check LieAlgebra       -- Lie algebra with bracket [·, ·]
+```
+
+## Linear Algebra
+
+Linear algebra lives in `Mathlib.LinearAlgebra` and covers matrices, bases, determinants, eigenvalues, and bilinear/quadratic forms.
+
+```lean
+-- Bases and finite-dimensionality
+#check Module.Basis          -- A basis for an R-module
+#check LinearIndependent     -- Linear independence of a family of vectors
+#check FiniteDimensional     -- Predicate: finite-dimensional vector space
+
+-- Matrices
+#check Matrix       -- Matrix R m n — an m×n matrix with entries in R
+#check Matrix.det   -- Determinant of a square matrix
+#check Matrix.inv   -- Inverse of an invertible matrix
+#check LinearMap.toMatrix  -- Represent a linear map as a matrix
+
+-- Cayley-Hamilton theorem
+#check Matrix.aeval_self_charpoly
+-- aeval A (charpoly A) = 0
+
+-- Eigenvalues
+#check Module.End.HasEigenvalue
+#check Module.End.exists_eigenvalue  -- Over algebraically closed fields
+```
+
+<CardGroup cols={2}>
+  <Card title="Structure Theorem (Modules over PID)" icon="rectangle-list">
+    Every finitely generated module over a PID is a direct sum of cyclic modules.
+
+    ```lean
+    #check Module.equiv_free_prod_directSum
+    ```
+  </Card>
+  <Card title="Cayley-Hamilton" icon="calculator">
+    Every matrix satisfies its own characteristic polynomial.
+
+    ```lean
+    #check Matrix.aeval_self_charpoly
+    ```
+  </Card>
+</CardGroup>
+
+## Polynomial Rings
+
+```lean
+-- Univariate polynomials
+#check Polynomial        -- R[X], polynomials in one variable
+#check Polynomial.roots  -- The multiset of roots (in a field)
+#check Polynomial.rootMultiplicity  -- Multiplicity of a root
+
+-- Polynomial rings are Euclidean (when R is a field)
+#check Polynomial.instEuclideanDomain
+
+-- Hilbert basis theorem: R[X] is Noetherian when R is
+#check Polynomial.isNoetherianRing
+
+-- Eisenstein's irreducibility criterion
+#check Polynomial.irreducible_of_eisenstein_criterion
+
+-- Multivariate polynomials
+#check MvPolynomial                     -- R[X₁, …, Xₙ]
+#check MvPolynomial.uniqueFactorizationMonoid  -- UFD when R is UFD
+
+-- Formal power series
+#check PowerSeries   -- R[[X]]
+```
+
+## Divisibility and UFDs
+
+```lean
+-- Abstract divisibility
+#check Irreducible                 -- Irreducible element in a monoid
+#check UniqueFactorizationMonoid   -- UFD: unique factorization into irreducibles
+#check Submodule.IsPrincipal       -- Principal ideal domain (PID)
+#check EuclideanDomain             -- Euclidean domain with division algorithm
+
+-- GCD and LCM
+#check GCDMonoid.gcd   -- Greatest common divisor
+#check GCDMonoid.lcm   -- Least common multiple
+
+-- Localization
+#check Localization         -- S⁻¹R for a submonoid S
+#check IsFractionRing       -- R embeds into its field of fractions
+#check FractionalIdeal      -- Fractional ideal in a domain
+```
+
+<Tip>
+For an interactive map of Mathlib's algebraic type-class hierarchy, see the [Mathlib4 docs algebra overview](https://leanprover-community.github.io/mathlib4_docs/).
+</Tip>

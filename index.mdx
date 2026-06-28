@@ -1,20 +1,60 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "Mathlib: The Lean 4 Mathematical Library"
+sidebarTitle: "Home"
+description: "Mathlib4 is the comprehensive mathematical library for Lean 4, with 8000+ formalized theorems spanning algebra, analysis, topology, number theory, category theory, and more."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+Mathlib is a community-maintained mathematical library for the [Lean 4](https://leanprover.github.io) theorem prover. It provides a vast collection of formalized mathematics — from foundational logic and algebra through real and complex analysis, topology, number theory, category theory, and beyond — together with a powerful suite of automation tactics to make proofs shorter and more readable.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Introduction" icon="book-open" href="/introduction">
+    Learn what Mathlib is, who maintains it, and how it fits into the Lean ecosystem.
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Lean 4, Lake, and Mathlib on your system in minutes.
+  </Card>
+  <Card title="Using as a Dependency" icon="link" href="/using-as-dependency">
+    Add Mathlib to your own Lean 4 project and fetch precompiled build cache.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Write your first Lean 4 proof using Mathlib in a few lines of code.
+  </Card>
+</CardGroup>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## Explore the Library
+
+<CardGroup cols={2}>
+  <Card title="Mathematics Overview" icon="square-root-variable" href="/mathematics/overview">
+    Survey the mathematical domains covered, from group theory to algebraic geometry.
+  </Card>
+  <Card title="Tactics" icon="wand-magic-sparkles" href="/tactics/overview">
+    Automate proofs with `linarith`, `ring`, `norm_num`, `simp`, `omega`, `positivity`, and more.
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="/contributing/guidelines">
+    Join the community — learn the style guide, naming conventions, and PR workflow.
+  </Card>
+  <Card title="Library Reference" icon="database" href="/reference/modules">
+    Browse the module hierarchy, dependencies, and the formalized 100 theorems list.
+  </Card>
+</CardGroup>
+
+## Why Mathlib?
+
+<Steps>
+  <Step title="Comprehensive Coverage">
+    Mathlib contains over 8,000 modules and hundreds of thousands of definitions and theorems. It is the largest single-language formalized mathematics library in the world.
+  </Step>
+  <Step title="Fast Builds with Precompiled Cache">
+    Run `lake exe cache get` to download precompiled `.olean` files from Mathlib's CI servers. Incremental builds on a laptop take seconds, not hours.
+  </Step>
+  <Step title="Powerful Automation">
+    Tactics like `linarith`, `ring`, `norm_num`, `simp`, and `omega` discharge routine proof obligations automatically, letting you focus on the interesting parts.
+  </Step>
+  <Step title="Active Community">
+    Hundreds of contributors maintain Mathlib on [Zulip](https://leanprover.zulipchat.com). Questions from beginners and experts alike are welcome.
+  </Step>
+</Steps>
+
+<Note>
+  Mathlib targets a fixed Lean 4 toolchain version. When starting a new project, copy the `lean-toolchain` file from Mathlib to ensure compatibility. See [Using as a Dependency](/using-as-dependency) for details.
+</Note>
